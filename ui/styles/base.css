@@ -1,0 +1,263 @@
+:root {
+  --bg-top: #0d1117;
+  --bg-bottom: #0d1117;
+  --panel: #11161f;
+  --panel-strong: #171d28;
+  --border: rgba(114, 137, 173, 0.12);
+  --text: #e7edf7;
+  --muted: #8b98ad;
+  --accent: #5c8dff;
+  --accent-deep: #3e6fe0;
+  --accent-soft: rgba(92, 141, 255, 0.14);
+  --success: #57c893;
+  --danger: #e36d72;
+  --shadow: none;
+  --radius-xl: 0;
+  --radius-lg: 10px;
+  --radius-md: 8px;
+  --radius-sm: 7px;
+  --space-1: 6px;
+  --space-2: 8px;
+  --space-3: 10px;
+  --space-4: 12px;
+  font-family: "Manrope", "Segoe UI Variable", "Avenir Next", "Noto Sans", sans-serif;
+  color: var(--text);
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+  transition: none !important;
+  animation: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+body {
+  background: var(--bg-top);
+  color: var(--text);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input,
+textarea,
+select,
+code {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+button,
+.tab,
+.addon-tile,
+.icon-button,
+.button,
+.select-field,
+input {
+  outline: none;
+  box-shadow: none;
+}
+
+button:focus,
+button:focus-visible,
+.tab:focus,
+.tab:focus-visible,
+.addon-tile:focus,
+.addon-tile:focus-visible,
+.icon-button:focus,
+.icon-button:focus-visible,
+.button:focus,
+.button:focus-visible,
+.select-field:focus,
+.select-field:focus-visible,
+input:focus,
+input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+button:active,
+.tab:active,
+.addon-tile:active,
+.icon-button:active,
+.button:active {
+  filter: none;
+  opacity: 1;
+}
+
+.panel {
+  background: var(--panel);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.field--inline {
+  gap: 0;
+}
+
+.field span,
+.info-block span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.field input,
+.select-field {
+  width: 100%;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: var(--radius-md);
+  border: 0;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font: inherit;
+  font-size: 11px;
+}
+
+.field input:focus,
+.select-field:focus {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.select-wrap {
+  position: relative;
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.03));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+.select-wrap::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  width: 8px;
+  height: 8px;
+  border-right: 1.5px solid var(--muted);
+  border-bottom: 1.5px solid var(--muted);
+  pointer-events: none;
+  transform: translateY(-65%) rotate(45deg);
+}
+
+.select-wrap--wide {
+  width: 100%;
+}
+
+.select-field {
+  padding-right: 34px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.tabs {
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 4px;
+  width: 100%;
+  max-width: 280px;
+  padding: 3px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.tab {
+  min-width: 0;
+  height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.tab.is-active {
+  background: rgba(92, 141, 255, 0.18);
+  color: #f5f9ff;
+}
+
+.button {
+  height: 30px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.button:disabled,
+.icon-button:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.button--ghost {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.button--accent {
+  background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+  color: #f7fbff;
+}
+
+.icon-sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.icon {
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+  flex: 0 0 auto;
+  vertical-align: middle;
+  transform: translateY(-0.5px);
+}
+
+.icon use,
+.icon path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

@@ -1,0 +1,6 @@
+target/
+src-tauri/target/
+.cargo-home/
+.DS_Store
+Thumbs.db
+.cargo-target-check/
