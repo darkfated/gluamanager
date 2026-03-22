@@ -22,9 +22,17 @@ jobs:
 
     runs-on: ${{ matrix.platform }}
 
+    env:
+      CARGO_INCREMENTAL: 0
+      RUST_BACKTRACE: 1
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Extract version (remove v)
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
 
       - name: Install Linux dependencies
         if: matrix.platform == 'ubuntu-22.04'
@@ -36,6 +44,10 @@ jobs:
             libayatana-appindicator3-dev \
             librsvg2-dev \
             patchelf
+
+      - name: Install NSIS (Windows only)
+        if: matrix.platform == 'windows-latest'
+        run: choco install nsis
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -58,10 +70,12 @@ jobs:
         with:
           projectPath: src-tauri
           tauriScript: cargo tauri
-          tagName: v__VERSION__
-          releaseName: GLuaManager v__VERSION__
+          tagName: ${{ github.ref_name }}
+          releaseName: Version ${{ env.VERSION }}
           releaseBody: See the assets to download this version and install.
           releaseDraft: false
           prerelease: false
-          uploadUpdaterSignatures: true
+          includeUpdaterJson: true
+          generateReleaseNotes: true
+          retryAttempts: 3
           args: ${{ matrix.args }}
