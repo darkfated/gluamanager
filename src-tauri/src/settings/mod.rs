@@ -8,7 +8,7 @@ use crate::error::{AppError, AppResult};
 
 const SETTINGS_FILE_NAME: &str = "settings.json";
 const DEFAULT_SOURCE_URL: &str =
-    "https://raw.githubusercontent.com/darkfated/gluasource/refs/heads/master/source.json";
+    "https://raw.githubusercontent.com/darkfated/gluamanager/refs/heads/master/default_source.json";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
