@@ -159,7 +159,7 @@ pub async fn update_addon(addon_path: &Path) -> AppResult<AddonView> {
             Some(remote.manifest.version.clone()),
             false,
             false,
-            "Актуально",
+            "Actual",
         ));
     }
 
@@ -176,7 +176,7 @@ pub async fn update_addon(addon_path: &Path) -> AppResult<AddonView> {
     if let Err(error) = update_result {
         restore_addon_from_backup(addon_path, &backup_path)?;
         return Err(AppError::Unexpected(format!(
-            "Не удалось обновить аддон. Выполнен rollback. Причина: {error}"
+            "Failed to update addon. Rolled back. Reason: {error}"
         )));
     }
 
@@ -186,7 +186,7 @@ pub async fn update_addon(addon_path: &Path) -> AppResult<AddonView> {
         Some(remote.manifest.version.clone()),
         false,
         false,
-        "Актуально",
+        "Actual",
     ))
 }
 
@@ -194,7 +194,7 @@ pub async fn rollback_addon(addon_path: &Path) -> AppResult<AddonView> {
     let backup_path = last_update_backup_path(addon_path)?;
     if !backup_path.exists() {
         return Err(AppError::Unexpected(
-            "Для этого аддона нет сохранённого rollback после обновления.".into(),
+            "No saved rollback available for this addon after update.".into(),
         ));
     }
 
@@ -273,7 +273,7 @@ pub async fn install_addon(
     }
 
     Err(AppError::Unexpected(format!(
-        "Не удалось найти установленный аддон {} после установки.",
+        "Failed to find installed addon {} after installation.",
         repository_url
     )))
 }
@@ -288,9 +288,9 @@ async fn check_discovered_addon(addon: DiscoveredAddon) -> AddonView {
                 has_update,
                 false,
                 if has_update {
-                    "Есть обновление"
+                    "Update available"
                 } else {
-                    "Актуально"
+                    "Actual"
                 },
             )
         }
@@ -299,7 +299,7 @@ async fn check_discovered_addon(addon: DiscoveredAddon) -> AddonView {
             None,
             false,
             true,
-            format!("Ошибка проверки: {error}"),
+            format!("Verification failed: {error}"),
         ),
     }
 }
@@ -333,7 +333,7 @@ where
             Ok(value) => results.push(value),
             Err(error) => {
                 return Err(AppError::Unexpected(format!(
-                    "Фоновая проверка GitHub завершилась с ошибкой: {error}"
+                    "Background GitHub check failed: {error}"
                 )));
             }
         }
@@ -345,13 +345,13 @@ where
 fn validate_root(root: &Path) -> AppResult<()> {
     if !root.exists() {
         return Err(AppError::Unexpected(format!(
-            "Папка не существует: {}",
+            "Folder does not exist: {}",
             root.display()
         )));
     }
     if !root.is_dir() {
         return Err(AppError::Unexpected(format!(
-            "Указанный путь не является директорией: {}",
+            "Specified path is not a directory: {}",
             root.display()
         )));
     }
@@ -399,7 +399,7 @@ async fn resolve_install_plan(
         if let Some(existing_branch) = branch_by_repo.get(&key) {
             if existing_branch != &current_branch {
                 return Err(AppError::Unexpected(format!(
-                    "Для репозитория {} указаны разные ветки зависимостей: {} и {}.",
+                    "Repository {} has conflicting dependency branches: {} and {}.",
                     url, existing_branch, current_branch
                 )));
             }
@@ -418,7 +418,7 @@ async fn resolve_install_plan(
             let dependency_branch = dependency.branch.trim();
             if dependency_url.is_empty() || dependency_branch.is_empty() {
                 return Err(AppError::Unexpected(format!(
-                    "В зависимостях аддона {} не заполнены url или branch.",
+                    "Addon {} dependencies missing URL or branch.",
                     install_name(&remote.manifest, &remote.repo.repo)
                 )));
             }
@@ -427,7 +427,7 @@ async fn resolve_install_plan(
             if let Some(existing_branch) = branch_by_repo.get(&dependency_key) {
                 if existing_branch != dependency_branch {
                     return Err(AppError::Unexpected(format!(
-                        "Для репозитория {} указаны разные ветки зависимостей: {} и {}.",
+                        "Repository {} has conflicting dependency branches: {} and {}.",
                         dependency_url, existing_branch, dependency_branch
                     )));
                 }
@@ -613,13 +613,13 @@ fn restore_addon_from_backup(addon_path: &Path, backup_path: &Path) -> AppResult
 fn last_update_backup_path(addon_path: &Path) -> AppResult<PathBuf> {
     let parent = addon_path.parent().ok_or_else(|| {
         AppError::Unexpected(format!(
-            "Не удалось определить родительскую директорию аддона: {}",
+            "Failed to determine parent directory for addon: {}",
             addon_path.display()
         ))
     })?;
     let addon_name = addon_path.file_name().ok_or_else(|| {
         AppError::Unexpected(format!(
-            "Не удалось определить имя директории аддона: {}",
+            "Failed to determine addon directory name: {}",
             addon_path.display()
         ))
     })?;
@@ -767,7 +767,7 @@ fn sanitize_archive_path(name: &str) -> AppResult<Option<PathBuf>> {
             Component::CurDir => {}
             Component::ParentDir | Component::RootDir | Component::Prefix(_) => {
                 return Err(AppError::Unexpected(format!(
-                    "Архив содержит небезопасный путь: {name}"
+                    "Archive contains an unsafe path: {name}"
                 )))
             }
         }
