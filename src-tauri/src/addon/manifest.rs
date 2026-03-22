@@ -2,9 +2,8 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use url::Url;
 
 use crate::error::{AppError, AppResult};
 
@@ -41,52 +40,12 @@ struct RawManifest {
     version: String,
     #[serde(default)]
     github: GithubSource,
-    #[serde(default, alias = "githubUrl")]
-    repository_url: String,
-    #[serde(default, alias = "githubBranch")]
-    branch: String,
     #[serde(default)]
     preserve: Vec<String>,
     #[serde(default)]
     dependencies: Vec<GithubSource>,
     #[serde(flatten)]
     _extra: HashMap<String, Value>,
-}
-
-impl From<RawManifest> for Manifest {
-    fn from(raw: RawManifest) -> Self {
-        let github = GithubSource {
-            url: if raw.github.url.trim().is_empty() {
-                raw.repository_url
-            } else {
-                raw.github.url
-            },
-            branch: if raw.github.branch.trim().is_empty() {
-                raw.branch
-            } else {
-                raw.github.branch
-            },
-        };
-
-        Self {
-            name: raw.name,
-            description: raw.description,
-            author: raw.author,
-            version: raw.version,
-            github,
-            preserve: raw.preserve,
-            dependencies: raw.dependencies,
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for Manifest {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        RawManifest::deserialize(deserializer).map(Into::into)
-    }
 }
 
 impl Manifest {
@@ -104,7 +63,15 @@ impl Manifest {
     }
 
     fn from_raw(raw: RawManifest) -> AppResult<Self> {
-        let manifest: Self = raw.into();
+        let manifest = Self {
+            name: raw.name,
+            description: raw.description,
+            author: raw.author,
+            version: raw.version,
+            github: raw.github,
+            preserve: raw.preserve,
+            dependencies: raw.dependencies,
+        };
         manifest.validate()?;
         Ok(manifest)
     }
@@ -119,30 +86,16 @@ impl Manifest {
 }
 
 pub fn parse_github_url(raw: &str) -> AppResult<(String, String)> {
-    let url = Url::parse(raw.trim()).map_err(|_| {
-        AppError::InvalidGithubUrl(
-            "Поле github.url должно быть ссылкой вида https://github.com/username/repo".into(),
-        )
-    })?;
-
-    if url.host_str() != Some("github.com") {
+    let value = raw.trim();
+    let parts = value.split('/').filter(|segment| !segment.is_empty()).collect::<Vec<_>>();
+    if parts.len() != 2 {
         return Err(AppError::InvalidGithubUrl(
-            "Поле github.url должно вести на github.com.".into(),
+            "Поле github.url должно быть в формате username/repo.".into(),
         ));
     }
-
-    let parts: Vec<_> = url
-        .path_segments()
-        .map(|segments| {
-            segments
-                .filter(|segment| !segment.is_empty())
-                .collect::<Vec<_>>()
-        })
-        .unwrap_or_default();
-
-    if parts.len() < 2 {
+    if value.contains("://") || value.starts_with("github.com/") {
         return Err(AppError::InvalidGithubUrl(
-            "Поле github.url должно быть ссылкой вида https://github.com/username/repo".into(),
+            "Поле github.url должно быть в формате username/repo.".into(),
         ));
     }
 
@@ -165,7 +118,7 @@ mod tests {
                 "author": "Author",
                 "version": "1.0.0",
                 "github": {
-                    "url": "https://github.com/username/test-addon",
+                    "url": "username/test-addon",
                     "branch": "main"
                 },
                 "preserve": ["data", "cfg/server.cfg"]
@@ -177,10 +130,7 @@ mod tests {
         assert_eq!(manifest.description, "Description");
         assert_eq!(manifest.author, "Author");
         assert_eq!(manifest.version, "1.0.0");
-        assert_eq!(
-            manifest.github.url,
-            "https://github.com/username/test-addon"
-        );
+        assert_eq!(manifest.github.url, "username/test-addon");
         assert_eq!(manifest.github.branch, "main");
         assert_eq!(manifest.preserve, vec!["data", "cfg/server.cfg"]);
         assert!(manifest.dependencies.is_empty());
@@ -197,16 +147,16 @@ mod tests {
                 "name": "Depends",
                 "version": "1.0.0",
                 "github": {
-                    "url": "https://github.com/username/root-addon",
+                    "url": "username/root-addon",
                     "branch": "main"
                 },
                 "dependencies": [
                     {
-                        "url": "https://github.com/username/lib-one",
+                        "url": "username/lib-one",
                         "branch": "main"
                     },
                     {
-                        "url": "https://github.com/username/lib-two",
+                        "url": "username/lib-two",
                         "branch": "master"
                     }
                 ]
@@ -215,10 +165,7 @@ mod tests {
         .expect("manifest");
 
         assert_eq!(manifest.dependencies.len(), 2);
-        assert_eq!(
-            manifest.dependencies[0].url,
-            "https://github.com/username/lib-one"
-        );
+        assert_eq!(manifest.dependencies[0].url, "username/lib-one");
         assert_eq!(manifest.dependencies[1].branch, "master");
     }
 }

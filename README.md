@@ -36,12 +36,12 @@ Example:
   "author": "username",
   "version": "1.2.0",
   "github": {
-    "url": "https://github.com/username/repo",
+    "url": "username/repo",
     "branch": "master"
   },
   "dependencies": [
     {
-      "url": "https://github.com/username/library-one",
+      "url": "username/library-one",
       "branch": "master"
     }
   ],
@@ -55,7 +55,7 @@ Fields:
 - `description` - short description
 - `author` - author
 - `version` - current addon version
-- `github.url` - GitHub repository URL
+- `github.url` - GitHub repository in `username/repo` format
 - `github.branch` - branch used to fetch the `.addon` file and the archive for installation and updates
 - `dependencies` - list of dependencies that will be installed together with the addon
 - `preserve` - list of files and paths that must not be overwritten or deleted during update
@@ -73,11 +73,11 @@ All paths are relative to the addon folder.
 ```json
 [
   {
-    "url": "https://github.com/username/library-one",
+    "url": "username/library-one",
     "branch": "main"
   },
   {
-    "url": "https://github.com/username/library-two",
+    "url": "username/library-two",
     "branch": "master"
   }
 ]
@@ -94,11 +94,11 @@ Example:
 ```json
 [
   {
-    "url": "https://github.com/username/addon-one",
+    "url": "username/addon-one",
     "branch": "main"
   },
   {
-    "url": "https://github.com/username/addon-two",
+    "url": "username/addon-two",
     "branch": "master"
   }
 ]

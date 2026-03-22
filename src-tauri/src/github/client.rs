@@ -182,7 +182,7 @@ async fn fetch_remote_manifest_by_repo(repo: RepoRef) -> AppResult<RemoteManifes
     let raw = fetch_manifest_bytes(&repo).await?;
     let mut manifest = Manifest::load_from_slice(&raw)?;
     if manifest.github.url.trim().is_empty() {
-        manifest.github.url = format!("https://github.com/{}/{}", repo.owner, repo.repo);
+        manifest.github.url = format!("{}/{}", repo.owner, repo.repo);
     }
     if manifest.github.branch.trim().is_empty() {
         manifest.github.branch = repo.branch.clone();

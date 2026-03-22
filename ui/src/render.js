@@ -95,6 +95,7 @@ function renderStaticText(state, elements) {
   elements.labelPreserve.textContent = t(state.locale, "modal.preserve");
   elements.labelDependencies.textContent = t(state.locale, "modal.dependencies");
   elements.modalInstallButton.textContent = t(state.locale, "addons.install");
+  elements.modalRollbackButton.textContent = t(state.locale, "addons.rollback");
   elements.installConfirmTitle.textContent = t(state.locale, "install.confirmTitle");
   elements.installConfirmCancel.textContent = t(state.locale, "install.cancel");
   elements.installConfirmAccept.textContent = t(state.locale, "install.accept");
@@ -285,6 +286,7 @@ function renderModal(state, elements) {
   const versionsEqual =
     isInstalled && hasRemote && addon.version.trim() === addon.remoteVersion.trim();
   const canUpdate = isInstalled && !isChecking && hasRemote && addon.hasUpdate && !versionsEqual;
+  const canRollback = isInstalled && !isChecking;
   const canInstall = !isInstalled && !addon.installed && !state.busy;
 
   elements.modalRemoteVersion.textContent = isChecking
@@ -331,7 +333,9 @@ function renderModal(state, elements) {
     elements.modalReadme.innerHTML = `<div class="readme-state">${escapeHtml(t(state.locale, "modal.readmeEmpty"))}</div>`;
   }
 
-  elements.modalFooter.hidden = !canUpdate && !canInstall;
+  elements.modalFooter.hidden = !canUpdate && !canInstall && !canRollback;
+  elements.modalRollbackButton.hidden = !canRollback;
+  elements.modalRollbackButton.disabled = state.busy || !canRollback;
   elements.modalInstallButton.hidden = !canInstall;
   elements.modalInstallButton.disabled = state.busy || state.installPlanLoading;
   elements.modalUpdateButton.hidden = !canUpdate;

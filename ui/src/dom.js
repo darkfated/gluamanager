@@ -53,6 +53,7 @@ export const elements = {
   modalDependencies: document.querySelector("#modal-dependencies"),
   modalReadme: document.querySelector("#modal-readme"),
   modalInstallButton: document.querySelector("#modal-install-button"),
+  modalRollbackButton: document.querySelector("#modal-rollback-button"),
   modalUpdateButton: document.querySelector("#modal-update-button"),
   modalFooter: document.querySelector(".modal__footer"),
   modalTabButtons: Array.from(document.querySelectorAll("[data-modal-tab]")),

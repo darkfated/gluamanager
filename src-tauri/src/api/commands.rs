@@ -77,6 +77,11 @@ async fn update_addon(addon_path: String) -> Result<AddonView, String> {
 }
 
 #[tauri::command]
+async fn rollback_addon(addon_path: String) -> Result<AddonView, String> {
+    handle(update::rollback_addon(&PathBuf::from(addon_path)).await)
+}
+
+#[tauri::command]
 async fn list_available_addons(
     root_path: String,
     source_urls: Vec<String>,
@@ -120,6 +125,7 @@ pub fn register() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool {
         load_available_addon,
         load_available_addon_readme,
         update_addon,
+        rollback_addon,
         list_available_addons,
         install_addon,
         preview_install

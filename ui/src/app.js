@@ -60,6 +60,7 @@ function bindEvents() {
   elements.addSourceButton.addEventListener("click", addSource);
   elements.appUpdateButton.addEventListener("click", installAppUpdate);
   elements.modalUpdateButton.addEventListener("click", updateSelectedFromModal);
+  elements.modalRollbackButton.addEventListener("click", rollbackSelectedFromModal);
   elements.modalInstallButton.addEventListener("click", requestInstallFromModal);
   elements.closeModal.addEventListener("click", closeModal);
   elements.installConfirmCancel.addEventListener("click", closeInstallPlan);
@@ -299,6 +300,28 @@ async function updateSelectedFromModal() {
     setBusy(true);
     setStatusText(format("status.updatingOne", { name: selected.name }));
     await invoke("update_addon", { addonPath: selected.addonPath });
+    await refreshInstalled();
+    await refreshAvailable();
+    if (state.selectedPath) {
+      await openModal(state.selectedPath);
+    }
+  } catch (error) {
+    setStatusText(normalizeError(error, state.locale));
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function rollbackSelectedFromModal() {
+  const selected = state.modalTargetType === "installed" ? state.modalAddon : null;
+  if (!selected || !selected.addonPath || !hasTauri()) {
+    return;
+  }
+
+  try {
+    setBusy(true);
+    setStatusText(format("status.rollbackOne", { name: selected.name }));
+    await invoke("rollback_addon", { addonPath: selected.addonPath });
     await refreshInstalled();
     await refreshAvailable();
     if (state.selectedPath) {

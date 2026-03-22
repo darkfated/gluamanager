@@ -1,14 +1,14 @@
 [
   {
-    "url": "https://github.com/darkfated/mantle",
+    "url": "darkfated/mantle",
     "branch": "master"
   },
   {
-    "url": "https://github.com/darkfated/newspawnmenu",
+    "url": "darkfated/newspawnmenu",
     "branch": "master"
   },
   {
-    "url": "https://github.com/darkfated/thirdperson",
+    "url": "darkfated/thirdperson",
     "branch": "master"
   }
 ]

@@ -21,6 +21,7 @@
     "updateAll": "Update all",
     "updateAllCount": "Update all ({count})",
     "install": "Install",
+    "rollback": "Rollback",
     "updatesShort": "Updates: {count}",
     "installedState": "Installed",
     "availableState": "Available",
@@ -108,6 +109,7 @@
     "installingAddon": "Installing addon from {url}",
     "updatingProgress": "Updating {current} of {total}: {name}",
     "updatingOne": "Updating {name}",
+    "rollbackOne": "Rolling back {name}",
     "genericError": "The operation failed."
   }
 }

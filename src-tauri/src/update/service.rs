@@ -28,6 +28,8 @@ struct ResolvedInstallPlan {
 }
 
 const GITHUB_CONCURRENCY_LIMIT: usize = 6;
+const BACKUP_ROOT_DIR: &str = ".gluamanager-backups";
+const LAST_UPDATE_BACKUP_DIR: &str = "last-update";
 
 pub async fn scan_root(root: &Path) -> AppResult<Vec<AddonView>> {
     let addons = discover_root(root)?;
@@ -134,9 +136,20 @@ pub async fn update_addon(addon_path: &Path) -> AppResult<AddonView> {
 
     let archive = github::download_repository_archive(&remote).await?;
     let preserve = merge_preserve(&local.preserve, &remote.manifest.preserve);
-    let extracted = extract_archive(addon_path, &archive, &preserve)?;
-    remove_stale_files(addon_path, &extracted, &preserve)?;
-    fs::write(&manifest_path, &remote.raw)?;
+    let backup_path = create_update_backup(addon_path)?;
+    let update_result = (|| -> AppResult<()> {
+        let extracted = extract_archive(addon_path, &archive, &preserve)?;
+        remove_stale_files(addon_path, &extracted, &preserve)?;
+        fs::write(&manifest_path, &remote.raw)?;
+        Ok(())
+    })();
+
+    if let Err(error) = update_result {
+        restore_addon_from_backup(addon_path, &backup_path)?;
+        return Err(AppError::Unexpected(format!(
+            "Не удалось обновить аддон. Выполнен rollback. Причина: {error}"
+        )));
+    }
 
     Ok(AddonView::from_manifest(
         &remote.manifest,
@@ -146,6 +159,18 @@ pub async fn update_addon(addon_path: &Path) -> AppResult<AddonView> {
         false,
         "Актуально",
     ))
+}
+
+pub async fn rollback_addon(addon_path: &Path) -> AppResult<AddonView> {
+    let backup_path = last_update_backup_path(addon_path)?;
+    if !backup_path.exists() {
+        return Err(AppError::Unexpected(
+            "Для этого аддона нет сохранённого rollback после обновления.".into(),
+        ));
+    }
+
+    restore_addon_from_backup(addon_path, &backup_path)?;
+    check_addon(addon_path).await
 }
 
 pub async fn list_available_addons(
@@ -169,10 +194,7 @@ pub async fn list_available_addons(
     for source_url in source_urls {
         let repositories = github::load_source_repositories(source_url).await?;
         for repository in repositories {
-            let repository_url = format!(
-                "https://github.com/{}/{}",
-                repository.owner, repository.repo
-            );
+            let repository_url = format!("{}/{}", repository.owner, repository.repo);
             let normalized = repository_url.trim().to_lowercase();
             if normalized.is_empty() || !seen.insert(normalized.clone()) {
                 continue;
@@ -529,6 +551,106 @@ fn unique_install_path(root: &Path, preferred_name: &str) -> PathBuf {
     }
 
     path
+}
+
+fn create_update_backup(addon_path: &Path) -> AppResult<PathBuf> {
+    validate_root(addon_path)?;
+    let backup_path = last_update_backup_path(addon_path)?;
+    if backup_path.exists() {
+        fs::remove_dir_all(&backup_path)?;
+    }
+    fs::create_dir_all(&backup_path)?;
+    copy_dir_contents(addon_path, &backup_path)?;
+    Ok(backup_path)
+}
+
+fn restore_addon_from_backup(addon_path: &Path, backup_path: &Path) -> AppResult<()> {
+    validate_root(addon_path)?;
+    validate_root(backup_path)?;
+    clear_directory(addon_path)?;
+    copy_dir_contents(backup_path, addon_path)?;
+    Ok(())
+}
+
+fn last_update_backup_path(addon_path: &Path) -> AppResult<PathBuf> {
+    let parent = addon_path.parent().ok_or_else(|| {
+        AppError::Unexpected(format!(
+            "Не удалось определить родительскую директорию аддона: {}",
+            addon_path.display()
+        ))
+    })?;
+    let addon_name = addon_path.file_name().ok_or_else(|| {
+        AppError::Unexpected(format!(
+            "Не удалось определить имя директории аддона: {}",
+            addon_path.display()
+        ))
+    })?;
+
+    Ok(parent
+        .join(BACKUP_ROOT_DIR)
+        .join(addon_name)
+        .join(LAST_UPDATE_BACKUP_DIR))
+}
+
+fn copy_dir_contents(from: &Path, to: &Path) -> AppResult<()> {
+    fs::create_dir_all(to)?;
+
+    for entry in fs::read_dir(from)? {
+        let entry = entry?;
+        let source_path = entry.path();
+        let target_path = to.join(entry.file_name());
+        let file_type = entry.file_type()?;
+
+        if file_type.is_dir() {
+            copy_dir_recursive(&source_path, &target_path)?;
+            continue;
+        }
+
+        if file_type.is_file() {
+            if let Some(parent) = target_path.parent() {
+                fs::create_dir_all(parent)?;
+            }
+            fs::copy(&source_path, &target_path)?;
+        }
+    }
+
+    Ok(())
+}
+
+fn copy_dir_recursive(from: &Path, to: &Path) -> AppResult<()> {
+    fs::create_dir_all(to)?;
+
+    for entry in fs::read_dir(from)? {
+        let entry = entry?;
+        let source_path = entry.path();
+        let target_path = to.join(entry.file_name());
+        let file_type = entry.file_type()?;
+
+        if file_type.is_dir() {
+            copy_dir_recursive(&source_path, &target_path)?;
+        } else if file_type.is_file() {
+            if let Some(parent) = target_path.parent() {
+                fs::create_dir_all(parent)?;
+            }
+            fs::copy(&source_path, &target_path)?;
+        }
+    }
+
+    Ok(())
+}
+
+fn clear_directory(path: &Path) -> AppResult<()> {
+    for entry in fs::read_dir(path)? {
+        let entry = entry?;
+        let entry_path = entry.path();
+        if entry.file_type()?.is_dir() {
+            fs::remove_dir_all(entry_path)?;
+        } else {
+            fs::remove_file(entry_path)?;
+        }
+    }
+
+    Ok(())
 }
 
 fn sanitize_dir_name(input: &str) -> String {
