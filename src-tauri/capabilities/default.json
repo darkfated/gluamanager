@@ -3,5 +3,17 @@
   "identifier": "main-capability",
   "description": "Main desktop capability for GLuaManager",
   "windows": ["main"],
-  "permissions": ["core:default", "dialog:default", "updater:default"]
+  "permissions": [
+    "core:default",
+    "dialog:default",
+    "updater:default",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        {
+          "url": "https://*"
+        }
+      ]
+    }
+  ]
 }

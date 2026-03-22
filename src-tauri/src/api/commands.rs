@@ -2,8 +2,9 @@ use std::path::PathBuf;
 
 use tauri::generate_handler;
 use tauri::AppHandle;
+use tauri_plugin_opener::OpenerExt;
 
-use crate::addon::{AddonView, AvailableAddonView, InstallPlanView};
+use crate::addon::{AddonView, AvailableAddonView, InstallPlanView, ReadmeView};
 use crate::app::AppInfoView;
 use crate::error::AppResult;
 use crate::settings::AppSettings;
@@ -17,6 +18,11 @@ async fn load_app_info(app: AppHandle) -> Result<AppInfoView, String> {
 #[tauri::command]
 async fn install_app_update(app: AppHandle) -> Result<bool, String> {
     handle(crate::app::install_update(&app).await)
+}
+
+#[tauri::command]
+async fn open_external_url(app: AppHandle, url: String) -> Result<(), String> {
+    app.opener().open_url(url, None::<&str>).map_err(|error| error.to_string())
 }
 
 #[tauri::command]
@@ -50,7 +56,7 @@ async fn check_addon(addon_path: String) -> Result<AddonView, String> {
 }
 
 #[tauri::command]
-async fn load_addon_readme(addon_path: String) -> Result<Option<String>, String> {
+async fn load_addon_readme(addon_path: String) -> Result<Option<ReadmeView>, String> {
     handle(update::load_addon_readme(&PathBuf::from(addon_path)).await)
 }
 
@@ -67,7 +73,7 @@ async fn load_available_addon(
 async fn load_available_addon_readme(
     repository_url: String,
     branch: String,
-) -> Result<Option<String>, String> {
+) -> Result<Option<ReadmeView>, String> {
     handle(update::load_available_addon_readme(&repository_url, &branch).await)
 }
 
@@ -116,6 +122,7 @@ pub fn register() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool {
         load_settings,
         load_app_info,
         install_app_update,
+        open_external_url,
         save_root_path,
         save_sources,
         scan_root,

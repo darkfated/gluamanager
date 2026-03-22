@@ -73,6 +73,7 @@
     "remoteVersion": "Версия на GitHub",
     "author": "Автор",
     "state": "Состояние",
+    "description": "Описание",
     "repository": "Репозиторий",
     "branch": "Ветка",
     "folder": "Локальная папка",

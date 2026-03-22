@@ -73,6 +73,7 @@
     "remoteVersion": "Remote version",
     "author": "Author",
     "state": "State",
+    "description": "Description",
     "repository": "Repository",
     "branch": "Branch",
     "folder": "Local folder",

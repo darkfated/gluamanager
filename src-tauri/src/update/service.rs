@@ -10,7 +10,8 @@ use walkdir::WalkDir;
 use zip::ZipArchive;
 
 use crate::addon::{
-    AddonView, AvailableAddonView, InstallPlanItem, InstallPlanView, Manifest, MANIFEST_NAME,
+    AddonView, AvailableAddonView, InstallPlanItem, InstallPlanView, Manifest, ReadmeView,
+    MANIFEST_NAME,
 };
 use crate::error::{AppError, AppResult};
 use crate::github;
@@ -61,10 +62,28 @@ pub async fn check_addon(addon_path: &Path) -> AppResult<AddonView> {
     Ok(check_discovered_addon(addon).await)
 }
 
-pub async fn load_addon_readme(addon_path: &Path) -> AppResult<Option<String>> {
+pub async fn load_addon_readme(addon_path: &Path) -> AppResult<Option<ReadmeView>> {
+    if let Some(local_readme) = load_local_readme(addon_path)? {
+        return Ok(Some(ReadmeView {
+            content: local_readme,
+            base_url: None,
+            local_base_path: Some(addon_path.display().to_string()),
+        }));
+    }
+
     let manifest_path = addon_path.join(MANIFEST_NAME);
     let manifest = Manifest::load(&manifest_path)?;
-    github::fetch_readme(&manifest).await
+    let (owner, repo) = crate::addon::parse_github_url(&manifest.github.url)?;
+    let branch = manifest.github.branch.trim();
+    let content = github::fetch_readme(&manifest).await?;
+
+    Ok(content.map(|content| ReadmeView {
+        content,
+        base_url: Some(format!(
+            "https://raw.githubusercontent.com/{owner}/{repo}/{branch}/"
+        )),
+        local_base_path: None,
+    }))
 }
 
 pub async fn load_available_addon(
@@ -94,8 +113,18 @@ pub async fn load_available_addon(
 pub async fn load_available_addon_readme(
     repository_url: &str,
     branch: &str,
-) -> AppResult<Option<String>> {
-    github::fetch_readme_from_repo_url(repository_url, branch).await
+) -> AppResult<Option<ReadmeView>> {
+    let (owner, repo) = crate::addon::parse_github_url(repository_url)?;
+    let branch = branch.trim();
+    let content = github::fetch_readme_from_repo_url(repository_url, branch).await?;
+
+    Ok(content.map(|content| ReadmeView {
+        content,
+        base_url: Some(format!(
+            "https://raw.githubusercontent.com/{owner}/{repo}/{branch}/"
+        )),
+        local_base_path: None,
+    }))
 }
 
 pub async fn preview_install(
@@ -479,6 +508,15 @@ fn try_manifest(dir: &Path) -> AppResult<Option<DiscoveredAddon>> {
         manifest,
         addon_path: dir.to_path_buf(),
     }))
+}
+
+fn load_local_readme(addon_path: &Path) -> AppResult<Option<String>> {
+    let readme_path = addon_path.join("README.md");
+    if readme_path.exists() && readme_path.is_file() {
+        return Ok(Some(fs::read_to_string(readme_path)?));
+    }
+
+    Ok(None)
 }
 
 fn addon_view(

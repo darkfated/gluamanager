@@ -49,6 +49,14 @@ pub struct InstallPlanView {
     pub items: Vec<InstallPlanItem>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReadmeView {
+    pub content: String,
+    pub base_url: Option<String>,
+    pub local_base_path: Option<String>,
+}
+
 impl AddonView {
     pub fn from_manifest(
         manifest: &Manifest,

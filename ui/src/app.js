@@ -66,6 +66,23 @@ function bindEvents() {
   elements.installConfirmCancel.addEventListener("click", closeInstallPlan);
   elements.installConfirmAccept.addEventListener("click", confirmInstallPlan);
   elements.modal.addEventListener("click", (event) => {
+    const openButton = event.target.closest("[data-open-external]");
+    if (openButton) {
+      event.preventDefault();
+      void openExternalUrl(openButton.dataset.openExternal);
+      return;
+    }
+
+    const link = event.target.closest("a[href]");
+    if (link) {
+      const url = link.getAttribute("href") || "";
+      if (/^(https?:|mailto:)/i.test(url)) {
+        event.preventDefault();
+        void openExternalUrl(url);
+        return;
+      }
+    }
+
     if (event.target.dataset.closeModal === "true") {
       closeModal();
     }
@@ -515,6 +532,23 @@ async function installAppUpdate() {
   } finally {
     state.appUpdating = false;
     render();
+  }
+}
+
+async function openExternalUrl(url) {
+  if (!url) {
+    return;
+  }
+
+  if (!hasTauri()) {
+    window.open(url, "_blank", "noopener,noreferrer");
+    return;
+  }
+
+  try {
+    await invoke("open_external_url", { url });
+  } catch (error) {
+    setStatusText(normalizeError(error, state.locale));
   }
 }
 

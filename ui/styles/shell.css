@@ -7,17 +7,17 @@
 }
 
 .topbar {
-  padding: 10px 14px;
+  padding: 6px 10px;
   display: grid;
-  gap: 10px;
+  gap: 8px;
   background: #11161f;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .topbar__main {
   display: grid;
-  grid-template-columns: 208px minmax(0, 1fr);
-  gap: 10px;
+  grid-template-columns: 188px minmax(0, 1fr);
+  gap: 8px;
   align-items: center;
 }
 
@@ -30,7 +30,7 @@
 }
 
 .brand {
-  min-height: 44px;
+  min-height: 40px;
   padding: 0 12px;
   display: flex;
   align-items: center;
@@ -51,7 +51,7 @@
   place-items: center;
   background: linear-gradient(135deg, var(--accent), var(--accent-deep));
   color: #f7fbff;
-  font-size: 13px;
+  font-size: var(--font-base);
   font-weight: 800;
   flex: 0 0 auto;
 }
@@ -62,13 +62,13 @@
 
 .brand__copy strong {
   display: block;
-  font-size: 13px;
+  font-size: var(--font-base);
   letter-spacing: -0.02em;
 }
 
 .toolbar {
-  min-height: 44px;
-  padding: 6px;
+  min-height: 40px;
+  padding: 4px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
@@ -83,10 +83,10 @@
 
 .topbar__tabs {
   min-height: 40px;
-  padding: 4px 6px 4px 4px;
+  padding: 3px 4px 3px 3px;
   display: grid;
-  grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
-  gap: 10px;
+  grid-template-columns: minmax(0, 252px) minmax(0, 1fr);
+  gap: 8px;
   align-items: center;
 }
 
@@ -97,8 +97,8 @@
 
 .workspace-hint span {
   color: var(--muted);
-  font-size: 10px;
-  line-height: 1.4;
+  font-size: var(--font-small);
+  line-height: 1.5;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -122,15 +122,15 @@
 
 .view-panel {
   min-height: 0;
-  padding: 16px 18px;
+  padding: 8px 10px;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  gap: 12px;
+  gap: 10px;
   background: var(--panel);
 }
 
 .view-header {
-  min-height: 34px;
+  min-height: 36px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
@@ -146,24 +146,24 @@
 
 .view-title .icon,
 .section-head .icon {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
   color: #9fb7e8;
 }
 
 .tab .icon {
-  width: 13px;
-  height: 13px;
+  width: 16px;
+  height: 16px;
 }
 
 .button .icon {
-  width: 13px;
-  height: 13px;
+  width: 16px;
+  height: 16px;
 }
 
 .view-title h1 {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--font-mid);
   letter-spacing: -0.02em;
   font-weight: 700;
 }
@@ -185,8 +185,8 @@
   margin: 0;
   min-width: 0;
   color: var(--muted);
-  font-size: 11px;
-  line-height: 1.35;
+  font-size: var(--font-small);
+  line-height: 1.5;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -196,11 +196,11 @@
   display: inline-flex;
   align-items: center;
   height: 26px;
-  padding: 0 9px;
+  padding: 0 8px;
   border-radius: 999px;
   background: rgba(92, 141, 255, 0.14);
   color: #bcd0ff;
-  font-size: 10px;
+  font-size: var(--font-small);
   font-weight: 700;
   white-space: nowrap;
 }
@@ -210,8 +210,8 @@
   overflow: auto;
   display: grid;
   align-content: start;
-  gap: 14px;
-  padding-right: 6px;
+  gap: 10px;
+  padding-right: 4px;
 }
 
 .view-section {
@@ -221,7 +221,7 @@
 }
 
 .section-head {
-  min-height: 24px;
+  min-height: 28px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -229,25 +229,25 @@
 
 .section-head h2 {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--font-small);
   letter-spacing: -0.01em;
 }
 
 .addon-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 200px));
-  grid-auto-rows: 144px;
+  grid-template-columns: repeat(auto-fill, minmax(206px, 206px));
+  grid-auto-rows: 142px;
   gap: 8px;
   align-content: start;
 }
 
 .addon-grid--available {
-  grid-auto-rows: 168px;
+  grid-auto-rows: 158px;
 }
 
 .addon-tile {
   min-width: 0;
-  padding: 10px;
+  padding: 11px;
   border-radius: var(--radius-lg);
   background: var(--panel-strong);
   border: 1px solid rgba(255, 255, 255, 0.04);
@@ -276,8 +276,8 @@
 
 .addon-tile h3 {
   margin: 0;
-  font-size: 13px;
-  line-height: 1.3;
+  font-size: var(--font-base);
+  line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -287,8 +287,8 @@
 .addon-tile p {
   margin: 0;
   color: var(--muted);
-  font-size: 11px;
-  line-height: 1.45;
+  font-size: var(--font-small);
+  line-height: 1.4;
   word-break: break-word;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -301,7 +301,7 @@
   flex-wrap: wrap;
   gap: 6px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--font-small);
 }
 
 .addon-tile__meta span {
@@ -326,9 +326,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 5px 8px;
+  padding: 3px 7px;
   border-radius: 999px;
-  font-size: 9px;
+  font-size: var(--font-small);
   font-weight: 800;
   white-space: nowrap;
 }
@@ -351,7 +351,7 @@
 .settings-surface {
   display: grid;
   gap: 8px;
-  padding: 12px;
+  padding: 8px;
   border-radius: var(--radius-lg);
   background: var(--panel-strong);
   border: 1px solid rgba(255, 255, 255, 0.04);
@@ -379,8 +379,8 @@
 .status-line p {
   margin: 0;
   color: var(--muted);
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: var(--font-small);
+  line-height: 1.5;
 }
 
 .source-list {
@@ -396,13 +396,13 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
-  padding: 10px 11px;
+  padding: 8px 9px;
   border-radius: 11px;
   background: rgba(255, 255, 255, 0.025);
 }
 
 .settings-row {
-  min-height: 32px;
+  min-height: 28px;
   display: grid;
   grid-template-columns: 160px minmax(0, 1fr);
   gap: 12px;
@@ -411,7 +411,7 @@
 
 .settings-row__label {
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--font-small);
 }
 
 .settings-row__value {
@@ -419,8 +419,8 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 10px;
-  font-size: 11px;
+  gap: 8px;
+  font-size: var(--font-small);
 }
 
 .settings-row__value--update {
@@ -428,8 +428,8 @@
 }
 
 .update-banner {
-  min-height: 46px;
-  padding: 10px 14px;
+  min-height: 40px;
+  padding: 7px 10px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
@@ -442,19 +442,19 @@
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .update-banner__copy strong {
   display: block;
-  font-size: 12px;
+  font-size: var(--font-small);
 }
 
 .update-banner__copy p {
   margin: 2px 0 0;
   color: var(--muted);
-  font-size: 11px;
-  line-height: 1.45;
+  font-size: var(--font-small);
+  line-height: 1.55;
 }
 
 .update-banner__actions {
@@ -464,21 +464,21 @@
 
 .source-item code {
   color: #cbd6e8;
-  font-size: 10px;
-  line-height: 1.45;
+  font-size: var(--font-small);
+  line-height: 1.55;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .empty-state {
-  min-height: 104px;
+  min-height: 84px;
   display: grid;
   place-items: center;
   text-align: center;
   border-radius: var(--radius-lg);
   color: var(--muted);
-  padding: 12px;
+  padding: 8px;
   background: rgba(255, 255, 255, 0.018);
 }
 
@@ -486,19 +486,19 @@
   display: block;
   margin-bottom: 4px;
   color: #cfd8e7;
-  font-size: 11px;
+  font-size: var(--font-small);
   font-weight: 700;
 }
 
 .empty-state p {
   margin: 0;
-  font-size: 10px;
-  line-height: 1.45;
+  font-size: var(--font-small);
+  line-height: 1.55;
 }
 
 .source-list .empty-state {
-  min-height: 120px;
-  padding: 16px 14px;
+  min-height: 96px;
+  padding: 8px 10px;
   text-align: left;
   place-items: center start;
   background: rgba(255, 255, 255, 0.015);
@@ -507,13 +507,13 @@
 .source-list .empty-state strong {
   margin-bottom: 6px;
   color: #bcc7d8;
-  font-size: 10px;
+  font-size: var(--font-small);
   font-weight: 600;
 }
 
 .source-list .empty-state p {
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--font-small);
 }
 
 @media (max-width: 1100px) {
@@ -558,7 +558,7 @@
   }
 
   .addon-grid {
-    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(198px, 1fr));
   }
 }
 
@@ -577,7 +577,7 @@
 
   .addon-grid {
     grid-template-columns: 1fr;
-    grid-auto-rows: 156px;
+    grid-auto-rows: 148px;
   }
 
   .settings-row {

@@ -1,6 +1,6 @@
 import { t, tf } from "./i18n.js";
 import { countUpdates } from "./state.js";
-import { escapeHtml, renderMarkdown } from "./utils.js";
+import { escapeHtml, renderMarkdown, repositoryHref } from "./utils.js";
 
 export function renderApp(state, elements) {
   renderStaticText(state, elements);
@@ -87,10 +87,8 @@ function renderStaticText(state, elements) {
 
   elements.labelInstalledVersion.textContent = t(state.locale, "modal.installedVersion");
   elements.labelRemoteVersion.textContent = t(state.locale, "modal.remoteVersion");
-  elements.labelAuthor.textContent = t(state.locale, "modal.author");
   elements.labelState.textContent = t(state.locale, "modal.state");
-  elements.labelRepository.textContent = t(state.locale, "modal.repository");
-  elements.labelBranch.textContent = t(state.locale, "modal.branch");
+  elements.labelDescription.textContent = t(state.locale, "modal.description");
   elements.labelFolder.textContent = t(state.locale, "modal.folder");
   elements.labelPreserve.textContent = t(state.locale, "modal.preserve");
   elements.labelDependencies.textContent = t(state.locale, "modal.dependencies");
@@ -131,7 +129,6 @@ function renderInstalledGrid(state, elements) {
       const description = addon.description || t(state.locale, "addons.noDescription");
       const name = addon.name || t(state.locale, "common.notSpecified");
       const version = addon.version || t(state.locale, "common.notSpecified");
-      const author = addon.author || t(state.locale, "common.notSpecified");
       return `
         <article class="addon-tile addon-tile--installed" data-addon-path="${escapeHtml(addon.addonPath)}">
           <div class="addon-tile__top">
@@ -143,7 +140,6 @@ function renderInstalledGrid(state, elements) {
           <p>${escapeHtml(description)}</p>
           <div class="addon-tile__meta">
             <span>${escapeHtml(tf(state.locale, "addons.version", { version }))}</span>
-            <span>${escapeHtml(tf(state.locale, "addons.authorShort", { author }))}</span>
           </div>
         </article>
       `;
@@ -175,7 +171,6 @@ function renderAvailableGrid(state, elements) {
   elements.availableAddonList.innerHTML = state.availableAddons
     .map((addon) => {
       const description = addon.description || t(state.locale, "addons.noDescription");
-      const author = addon.author || t(state.locale, "common.notSpecified");
       const installText = addon.installed
         ? t(state.locale, "addons.installedState")
         : t(state.locale, "addons.install");
@@ -199,7 +194,6 @@ function renderAvailableGrid(state, elements) {
           <p>${escapeHtml(description)}</p>
           <div class="addon-tile__meta">
             <span>${escapeHtml(tf(state.locale, "addons.version", { version: addon.version || t(state.locale, "common.notSpecified") }))}</span>
-            <span>${escapeHtml(tf(state.locale, "addons.authorShort", { author }))}</span>
           </div>
           <div class="addon-tile__actions">
             <button
@@ -269,14 +263,25 @@ function renderModal(state, elements) {
   }
 
   const isInstalled = state.modalTargetType === "installed";
+  const repoHref = repositoryHref(addon.repositoryUrl);
   elements.modal.hidden = false;
   elements.modalTitle.textContent = addon.name || t(state.locale, "common.notSpecified");
-  elements.modalSubtitle.textContent = addon.description || t(state.locale, "addons.noDescription");
+  elements.modalSubtitle.textContent = "";
   elements.modalInstalledVersion.textContent =
     addon.version || t(state.locale, "common.notSpecified");
-  elements.modalAuthor.textContent = addon.author || t(state.locale, "common.notSpecified");
-  elements.modalRepository.textContent = addon.repositoryUrl || t(state.locale, "common.notSpecified");
-  elements.modalBranch.textContent = addon.branch || t(state.locale, "common.notSpecified");
+  elements.modalRepositoryInline.innerHTML = addon.repositoryUrl
+    ? repoHref
+      ? `
+          <button class="repo-link repo-link--inline" type="button" data-open-external="${escapeHtml(repoHref)}">
+            <span class="repo-link__main">${escapeHtml(addon.repositoryUrl)}</span>
+            <span class="repo-link__icon">
+              <svg class="icon"><use href="#i-github" /></svg>
+              <svg class="icon"><use href="#i-external" /></svg>
+            </span>
+          </button>
+        `
+      : `<span class="repo-inline-text">${escapeHtml(addon.repositoryUrl)}</span>`
+    : "";
   elements.modalFolder.textContent = isInstalled
     ? addon.addonPath || t(state.locale, "common.notSpecified")
     : state.rootPath || t(state.locale, "common.notSpecified");
@@ -295,6 +300,9 @@ function renderModal(state, elements) {
       ? addon.remoteVersion || t(state.locale, "modal.notChecked")
       : addon.version || t(state.locale, "common.notSpecified");
   elements.modalState.textContent = isChecking ? t(state.locale, "modal.checking") : addon.status;
+  elements.modalDescription.innerHTML = renderMarkdown(
+    addon.description || t(state.locale, "addons.noDescription"),
+  );
   elements.modalVersionBand.textContent = isChecking
     ? t(state.locale, "modal.checking")
     : !isInstalled
@@ -328,7 +336,10 @@ function renderModal(state, elements) {
   if (state.modalReadmeLoading) {
     elements.modalReadme.innerHTML = `<div class="readme-state">${escapeHtml(t(state.locale, "modal.readmeLoading"))}</div>`;
   } else if (state.modalReadme) {
-    elements.modalReadme.innerHTML = renderMarkdown(state.modalReadme);
+    elements.modalReadme.innerHTML = renderMarkdown(state.modalReadme.content, {
+      baseUrl: state.modalReadme.baseUrl,
+      localBasePath: state.modalReadme.localBasePath,
+    });
   } else {
     elements.modalReadme.innerHTML = `<div class="readme-state">${escapeHtml(t(state.locale, "modal.readmeEmpty"))}</div>`;
   }
@@ -373,12 +384,30 @@ function renderDependencies(state, dependencies) {
 
   return dependencies
     .map(
-      (dependency) => `
+      (dependency) => {
+        const href = repositoryHref(dependency.url);
+        const repository = dependency.url || t(state.locale, "common.notSpecified");
+        return `
         <div class="dependency-item">
-          <code>${escapeHtml(dependency.url || t(state.locale, "common.notSpecified"))}</code>
-          <span>${escapeHtml(dependency.branch || t(state.locale, "common.notSpecified"))}</span>
+          ${
+            href
+              ? `<button class="dependency-link" type="button" data-open-external="${escapeHtml(href)}">
+                  <span>${escapeHtml(repository)}</span>
+                  <span class="dependency-link__icon">
+                    <svg class="icon"><use href="#i-github" /></svg>
+                    <svg class="icon"><use href="#i-external" /></svg>
+                  </span>
+                </button>`
+              : `<code>${escapeHtml(repository)}</code>`
+          }
+          ${
+            dependency.branch
+              ? `<span class="dependency-meta">${escapeHtml(dependency.branch)}</span>`
+              : ""
+          }
         </div>
-      `,
+      `;
+      },
     )
     .join("");
 }
