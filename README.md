@@ -1,10 +1,10 @@
 # GLuaManager
 
-GLuaManager is a desktop addon manager for Garry's Mod.
+Desktop addon manager for Garry's Mod.
 
 Each addon has a `.addon` file in its root directory. The application detects these folders, shows installed addons, checks their versions on GitHub, updates them, and can install new addons from external sources.
 
-## How It Works
+## 🔥 How It Works
 
 The application has two main workflows.
 
@@ -22,6 +22,23 @@ The second workflow is installing new addons:
 - a source is a URL to a JSON file containing an array of `url + branch` objects
 - the application reads these entries, downloads remote `.addon` files, and shows the available addons
 - the selected addon is installed into the current addons directory
+
+> [!WARNING]
+> This is not a full-featured package manager like modern solutions (npm, pip, etc.). Due to Garry's Mod's architecture, addons cannot be isolated from each other, which limits dependency management. Additionally, there is no real version control - instead of git releases or commits, version designations are stored in the `.addon` metafile.
+
+## 👀 Media
+
+### Main Page
+
+<img width="1353" height="897" alt="image" src="https://github.com/user-attachments/assets/e4c23927-b356-4d1f-8bfb-5d98e9945c9e" />
+
+### Settings Page
+
+<img width="1353" height="897" alt="image" src="https://github.com/user-attachments/assets/6944c179-ecad-46ac-9aa2-48e601d4b232" />
+
+### Modal Menu
+
+<img width="1353" height="897" alt="image" src="https://github.com/user-attachments/assets/bcb75ec8-6e76-4d27-bcf2-2e135e170c99" />
 
 ## `.addon` Format
 
