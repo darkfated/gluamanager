@@ -21,8 +21,7 @@
   --space-3: 10px;
   --space-4: 12px;
   --font-base: 14px;
-  --font-large: 18px;
-  --font-mid: 16px;
+  --font-large: 16px;
   --font-small: 12px;
   font-family:
     'Manrope', 'Segoe UI Variable', 'Avenir Next', 'Noto Sans', sans-serif;
@@ -135,7 +134,6 @@ button:active,
   background: rgba(255, 255, 255, 0.04);
   color: var(--text);
   font: inherit;
-  font-size: var(--font-base);
 }
 
 .field input:focus,

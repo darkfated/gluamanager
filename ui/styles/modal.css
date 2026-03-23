@@ -41,7 +41,6 @@
 .modal__footer .button {
   height: 32px;
   padding: 0 10px;
-  font-size: var(--font-base);
 }
 
 .modal__heading {
@@ -60,7 +59,6 @@
 .modal__header p {
   margin: 0;
   color: var(--muted);
-  font-size: var(--font-small);
   line-height: 1.45;
   word-break: break-word;
 }
@@ -126,7 +124,7 @@
   display: flex;
   align-items: center;
   color: #d9e6ff;
-  font-size: var(--font-base);
+  font-size: var(--font-small)
   font-weight: 700;
   line-height: 1.5;
 }
@@ -136,6 +134,7 @@
   padding: 6px 8px;
   border-radius: 10px;
   background: rgba(9, 13, 20, 0.34);
+  font-size: var(--font-small);
   display: grid;
   align-content: start;
   gap: 4px;
@@ -145,13 +144,11 @@
 .metric-card span,
 .modal__section-head span {
   color: var(--muted);
-  font-size: var(--font-small);
   letter-spacing: 0.01em;
 }
 
 .metric-card strong {
   display: block;
-  font-size: var(--font-base);
   line-height: 1.3;
   word-break: break-word;
   font-weight: 700;
@@ -179,7 +176,6 @@
 .repo-inline-text {
   color: var(--muted);
   font-family: "JetBrains Mono", "Cascadia Code", monospace;
-  font-size: var(--font-small);
   line-height: 1.4;
 }
 
@@ -204,7 +200,6 @@
   background: transparent;
   color: var(--muted);
   font: inherit;
-  font-size: var(--font-base);
   font-weight: 700;
   cursor: pointer;
 }
@@ -262,7 +257,6 @@
 .info-block code {
   display: block;
   word-break: break-word;
-  font-size: var(--font-small);
   line-height: 1.55;
   white-space: pre-wrap;
 }
@@ -301,7 +295,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: "JetBrains Mono", "Cascadia Code", monospace;
-  font-size: var(--font-small);
   line-height: 1.5;
 }
 
@@ -348,7 +341,6 @@
 
 .dependency-item .dependency-meta {
   color: var(--muted);
-  font-size: var(--font-small);
   padding: 0 9px 7px;
   line-height: 1.35;
 }
@@ -383,14 +375,12 @@
   white-space: pre;
   color: #eaf2ff;
   font-family: "JetBrains Mono", "Cascadia Code", monospace;
-  font-size: var(--font-small);
   line-height: 1.7;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .markdown-body {
   color: var(--text);
-  font-size: var(--font-base);
   line-height: 1.6;
 }
 
@@ -532,14 +522,9 @@
   gap: 4px;
 }
 
-.install-confirm__head strong {
-  font-size: var(--font-base);
-}
-
 .install-confirm__head p {
   margin: 0;
   color: var(--muted);
-  font-size: var(--font-small);
   line-height: 1.5;
 }
 
@@ -558,13 +543,8 @@
   background: rgba(255, 255, 255, 0.035);
 }
 
-.install-confirm__item strong {
-  font-size: var(--font-base);
-}
-
 .install-confirm__item span {
   color: var(--muted);
-  font-size: var(--font-small);
 }
 
 .install-confirm__actions {
@@ -575,7 +555,6 @@
 
 .readme-state {
   color: var(--muted);
-  font-size: var(--font-small);
   line-height: 1.45;
 }
 
