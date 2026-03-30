@@ -63,7 +63,7 @@ const store = useAppStore();
 
     <SourceList
       :title="store.t('settings.sourceTitle')"
-      :subtitle="store.state.sourcesStatusMessage || ''"
+      :subtitle="store.state.sourcesStatusMessage || store.t('sources.subtitle')"
       :sources="store.state.sources"
       :input-value="store.state.sourceInput"
       :status-text="''"

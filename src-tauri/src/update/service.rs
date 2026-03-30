@@ -212,20 +212,49 @@ pub async fn list_available_addons(
     source_urls: &[String],
 ) -> AppResult<Vec<AvailableAddonView>> {
     let installed_sources = installed_source_map(root)?;
-    let mut available = Vec::new();
+    let installed_keys = Arc::new(
+        installed_sources
+            .keys()
+            .cloned()
+            .collect::<HashSet<String>>(),
+    );
+    let mut addon_urls = Vec::new();
+    let mut seen_addons = HashSet::<String>::new();
 
     for source_url in source_urls {
-        let remote = match github::fetch_manifest_from_url(source_url).await {
-            Ok(remote) => remote,
+        let source_index = match github::fetch_source_index_from_url(source_url).await {
+            Ok(items) => items,
             Err(_) => continue,
         };
-        let installed = installed_sources.contains_key(&source_key(source_url));
-        available.push(AvailableAddonView::from_manifest(
-            &remote,
-            Some(source_url.clone()),
-            installed,
-        ));
+
+        for addon_url in source_index {
+            let normalized_key = source_key(&addon_url);
+            if !seen_addons.insert(normalized_key) {
+                continue;
+            }
+            addon_urls.push(addon_url);
+        }
     }
+
+    let mut available = run_limited(addon_urls, move |addon_url| {
+        let installed_keys = Arc::clone(&installed_keys);
+        async move {
+            let remote = match github::fetch_manifest_from_url(&addon_url).await {
+                Ok(remote) => remote,
+                Err(_) => return None,
+            };
+            let installed = installed_keys.contains(&source_key(&addon_url));
+            Some(AvailableAddonView::from_manifest(
+                &remote,
+                Some(addon_url),
+                installed,
+            ))
+        }
+    })
+    .await?
+    .into_iter()
+    .flatten()
+    .collect::<Vec<_>>();
 
     available.sort_by(|left, right| left.name.to_lowercase().cmp(&right.name.to_lowercase()));
     Ok(available)

@@ -4,40 +4,41 @@ Desktop addon manager for Garry's Mod.
 
 Language: [🇺🇸 English](./README.md) | [🇷🇺 Русский](./README_RU.md)
 
-GLuaManager helps you keep a Garry's Mod workspace organized: it scans installed addons, checks them against remote metadata, shows what can be updated, and installs new addons from metadata URLs.
+GLuaManager keeps a Garry's Mod workspace organized. It scans installed addons, checks remote metadata, shows updates, and installs addons from metadata URLs or source indexes.
 
 ## 🔥 How it works
 
-There are two separate flows.
+There are two ways to add addons: source indexes in Settings and a direct metadata URL on the main tab.
 
 ### 🔗 Data flow
 
-The app follows a short chain:
+The flow is simple:
 
-- a **source** is a URL stored in Settings
-- each source points to an addon **metadata JSON**
-- the metadata contains the addon `info` and the direct `url` for the archive
+- a **source** is a JSON index in Settings
+- each source lists addon metadata URLs
+- each metadata file contains addon `info` and a direct archive `url`
 - the archive is what gets downloaded and installed
 
-That means a source can point to metadata on GitHub, on your own site, or anywhere else that serves a valid JSON file.
+If you already have one addon metadata URL, use **Add addon** on the main tab.
 
 ### 📦 Installed addons
 
 - choose your Garry's Mod addons folder
 - the app scans folders that contain a `.addon` manifest
-- each installed addon keeps its own local metadata
-- the app remembers where that addon came from through a small sidecar file
-- when you check updates, it loads the saved metadata source again and compares versions
+- each installed addon keeps its local metadata
+- the app stores the metadata URL beside the addon
+- update checks reload that URL and compare versions
 - if versions differ, the addon is marked as updateable
-- when you update, the app downloads the archive from the manifest `url` and applies it over the local folder
+- update downloads the archive from `url` and applies it to the local folder
 
 ### 🌐 Remote catalog
 
-- add one or more source URLs in Settings
-- each source points to an addon metadata JSON file
+- add one or more source index URLs in Settings
+- each source index points to addon metadata URLs
 - the app loads those metadata files and builds the remote catalog
+- use **Add addon** on the main tab for a single metadata URL
 - opening an addon shows its metadata, download URL, dependencies, and local README if it exists
-- installing an addon resolves dependency metadata first and shows a plan before anything is downloaded
+- install first resolves dependencies and then downloads what is needed
 
 > [!NOTE]
 > GLuaManager is not a package manager. Garry's Mod addons share one filesystem namespace, so the app focuses on visibility, dependency warnings, and controlled installation.
@@ -84,32 +85,30 @@ All paths are relative to the addon folder.
 
 ## 🗂️ Sources and examples
 
-Sources are stored as a list of metadata URLs.
+Sources are stored as a list of source index URLs.
 
 Example:
 
 ```json
 [
-  "https://example.com/mantle.json",
-  "https://example.com/newspawnmenu.json",
-  "https://example.com/thirdperson.json"
+  "https://example.com/default_source.json"
 ]
 ```
 
-If you want to see a working layout, look at the `exampleMeta/` folder in this repository. It contains sample metadata files for `mantle`, `newspawnmenu`, and `thirdperson`, and the default source list points to those examples.
+If you want a working example, look at the `exampleMeta/` folder. It contains sample addon metadata files for `mantle`, `newspawnmenu`, and `thirdperson`. The bundled `default_source.json` is an example source index that points to those files.
 
-They show the same format you can host anywhere that serves valid JSON.
+Source indexes and metadata files can live anywhere that serves valid JSON over `http` or `https`.
 
 ## ⚙️ Installation and updates
 
-Installation and updates follow the same rule: the app always uses the addon metadata source as the reference point.
+Installation and updates use the same metadata file.
 
 - install: resolve dependencies, show the plan, then download the archive from `url`
-- update: reload metadata from the saved source URL and compare `version`
+- update: reload metadata from the saved URL and compare `version`
 - match: the addon is up to date
 - mismatch: the addon can be updated
 
-After installation, GLuaManager stores the source URL next to the addon so future checks stay tied to the same metadata source.
+After installation, GLuaManager stores the metadata URL next to the addon so future checks stay tied to the same entry.
 
 ## 🛠️ Build requirements
 

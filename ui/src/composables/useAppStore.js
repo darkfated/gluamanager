@@ -31,6 +31,7 @@ export function createAppStore() {
     availableAddons: [],
     sources: [],
     sourceInput: "",
+    addonInput: "",
     statusMessage: "",
     sourcesStatusMessage: "",
     appVersion: "",
@@ -313,6 +314,37 @@ export function createAppStore() {
     const addon = state.availableAddons.find((item) => item.sourceUrl === sourceUrl) ?? null;
 
     if (!addon) {
+      if (!sourceUrl || !hasTauri()) {
+        return;
+      }
+
+      state.modalOpen = true;
+      state.modalTargetType = "available";
+      resetModalState({ checking: true, readmeLoading: true });
+
+      try {
+        const [addonResult, readmeResult] = await Promise.allSettled([
+          invoke("load_available_addon", {
+            rootPath: state.rootPath,
+            sourceUrl,
+          }),
+          invoke("load_available_addon_readme", {
+            sourceUrl,
+          }),
+        ]);
+
+        if (addonResult.status === "fulfilled") {
+          state.modalAddon = createAvailableModalAddon(addonResult.value, translate);
+        } else {
+          state.modalAddon = null;
+          setStatusText(normalizeError(addonResult.reason, locale.value));
+        }
+
+        state.modalReadme = readmeResult.status === "fulfilled" ? readmeResult.value : null;
+      } finally {
+        finishModalLoading();
+      }
+
       return;
     }
 
@@ -350,6 +382,28 @@ export function createAppStore() {
     } finally {
       finishModalLoading();
     }
+  }
+
+  async function addAddonFromUrl() {
+    const normalized = state.addonInput.trim();
+    if (!normalized) {
+      return false;
+    }
+    if (!isHttpUrl(normalized)) {
+      setStatus("workspace.invalidAddonUrl");
+      return false;
+    }
+    if (!state.rootPath) {
+      setStatus("status.selectFolderFirst");
+      return false;
+    }
+    if (!hasTauri()) {
+      setStatus("status.runtimeRequired");
+      return false;
+    }
+
+    void openAvailableModal(normalized);
+    return true;
   }
 
   function closeModal() {
@@ -508,6 +562,10 @@ export function createAppStore() {
     state.sourceInput = value;
   }
 
+  function setAddonInput(value) {
+    state.addonInput = value;
+  }
+
   function setRootPath(value) {
     state.rootPath = value;
   }
@@ -599,8 +657,10 @@ export function createAppStore() {
     rollbackSelectedFromModal,
     removeSelectedFromModal,
     addSource,
+    addAddonFromUrl,
     removeSource,
     setSourceInput,
+    setAddonInput,
     setRootPath,
     saveTypedRootPath,
     setLanguage,

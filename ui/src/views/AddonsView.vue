@@ -11,6 +11,7 @@ const router = useRouter();
 const updateCount = store.updateCount;
 const installedQuery = ref("");
 const availableQuery = ref("");
+const addonDialogOpen = ref(false);
 
 function matchesAddon(addon, query) {
   const normalized = query.trim().toLowerCase();
@@ -39,6 +40,21 @@ const filteredAvailableAddons = computed(() =>
 
 function openSettingsForSources() {
   router.push("/settings");
+}
+
+function openAddonDialog() {
+  addonDialogOpen.value = true;
+}
+
+function closeAddonDialog() {
+  addonDialogOpen.value = false;
+}
+
+async function confirmAddonDialog() {
+  const accepted = await store.addAddonFromUrl();
+  if (accepted) {
+    closeAddonDialog();
+  }
 }
 </script>
 
@@ -74,9 +90,51 @@ function openSettingsForSources() {
             {{ store.t("workspace.scan") }}
           </button>
         </div>
+        <button
+          class="button button--primary button--toolbar"
+          type="button"
+          :disabled="store.state.busy"
+          @click="openAddonDialog()"
+        >
+          {{ store.t("workspace.addAddon") }}
+        </button>
       </div>
-
     </section>
+
+    <Teleport to="body">
+      <div v-if="addonDialogOpen" class="addon-dialog-shell" @click.self="closeAddonDialog()">
+        <section class="addon-dialog panel">
+          <header class="addon-dialog__header">
+            <div class="addon-dialog__title">
+              <h3>{{ store.t("workspace.addAddonDialogTitle") }}</h3>
+              <p>{{ store.t("workspace.addAddonDialogCopy") }}</p>
+            </div>
+          </header>
+
+          <input
+            :value="store.state.addonInput"
+            class="input"
+            :placeholder="store.t('workspace.addAddonPlaceholder')"
+            @input="store.setAddonInput($event.target.value)"
+            @keyup.enter="confirmAddonDialog()"
+          />
+
+          <div class="addon-dialog__actions">
+            <button class="button button--ghost" type="button" @click="closeAddonDialog()">
+              {{ store.t("workspace.addAddonCancel") }}
+            </button>
+            <button
+              class="button button--primary"
+              type="button"
+              :disabled="store.state.busy || !store.state.rootPath || !store.state.addonInput.trim()"
+              @click="confirmAddonDialog()"
+            >
+              {{ store.t("workspace.addAddonOpen") }}
+            </button>
+          </div>
+        </section>
+      </div>
+    </Teleport>
 
     <section
       v-if="store.state.appUpdate && !store.state.appUpdateDismissed"
@@ -209,6 +267,7 @@ function openSettingsForSources() {
 
 .workspace-toolbar,
 .workspace-toolbar__main,
+.workspace-toolbar__add,
 .workspace-toolbar__actions,
 .workspace-toolbar__stats,
 .desktop-banner,
@@ -227,7 +286,9 @@ function openSettingsForSources() {
 }
 
 .workspace-toolbar {
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
   padding: 0.75rem 0.85rem;
 }
 
@@ -317,6 +378,61 @@ function openSettingsForSources() {
 
 .button--toolbar {
   min-width: 8.5rem;
+}
+
+.addon-dialog-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(6, 10, 16, 0.72);
+}
+
+.addon-dialog {
+  width: min(38rem, 100%);
+  display: grid;
+  gap: 0.85rem;
+  padding: 0.85rem;
+  border-radius: 0.95rem;
+}
+
+.addon-dialog__header {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.addon-dialog__title {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.addon-dialog__title h3,
+.addon-dialog__title p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.addon-dialog__title h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.addon-dialog__title p {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.addon-dialog__actions {
+  display: flex;
+  gap: 0.65rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 @media (max-width: 1080px) {

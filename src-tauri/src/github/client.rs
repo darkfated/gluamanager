@@ -39,6 +39,22 @@ pub async fn fetch_manifest_from_url(manifest_url: &str) -> AppResult<Manifest> 
     Manifest::load_from_url(&bytes)
 }
 
+pub async fn fetch_source_index_from_url(source_url: &str) -> AppResult<Vec<String>> {
+    let response = client().get(source_url).send().await?;
+    ensure_success(
+        response.status(),
+        format!("Failed to fetch source index from {}.", source_url),
+    )?;
+
+    let bytes = response.bytes().await?;
+    let items = serde_json::from_slice::<Vec<String>>(&bytes)?;
+    Ok(items
+        .into_iter()
+        .map(|item| item.trim().to_string())
+        .filter(|item| !item.is_empty())
+        .collect())
+}
+
 pub async fn download_archive_from_url(archive_url: &str) -> AppResult<Vec<u8>> {
     let response = client().get(archive_url).send().await?;
     ensure_success(
