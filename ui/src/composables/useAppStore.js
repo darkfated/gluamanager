@@ -449,7 +449,7 @@ export function createAppStore() {
     }
   }
 
-  async function confirmInstallPlan() {
+  async function confirmInstallPlan(selectedSourceUrls = []) {
     const addon = state.modalAddon;
     if (!addon?.sourceUrl || !hasTauri()) {
       return;
@@ -461,6 +461,7 @@ export function createAppStore() {
       await invoke("install_addon", {
         rootPath: state.rootPath,
         sourceUrl: addon.sourceUrl,
+        selectedSourceUrls,
       });
       closeInstallPlan();
       closeModal();

@@ -109,6 +109,7 @@ export const messages = {
       confirmText: "The following addons will be installed into {root}:",
       cancel: "Cancel",
       accept: "Install now",
+      required: "Required",
     },
     status: {
       embeddedOnly: "This action is available only inside the desktop app.",
@@ -240,6 +241,7 @@ export const messages = {
       confirmText: "Будут установлены следующие аддоны в {root}:",
       cancel: "Отмена",
       accept: "Установить",
+      required: "Обязательно",
     },
     status: {
       embeddedOnly: "Эта функция доступна только внутри десктопного приложения.",

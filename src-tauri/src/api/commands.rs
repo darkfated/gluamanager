@@ -99,8 +99,19 @@ async fn list_available_addons(
 }
 
 #[tauri::command]
-async fn install_addon(root_path: String, source_url: String) -> Result<AddonView, String> {
-    handle(update::install_addon(&PathBuf::from(root_path), &source_url).await)
+async fn install_addon(
+    root_path: String,
+    source_url: String,
+    selected_source_urls: Option<Vec<String>>,
+) -> Result<AddonView, String> {
+    let root_path = PathBuf::from(root_path);
+    match selected_source_urls {
+        Some(selected_source_urls) => handle(
+            update::install_addon_with_selection(&root_path, &source_url, &selected_source_urls)
+                .await,
+        ),
+        None => handle(update::install_addon(&root_path, &source_url).await),
+    }
 }
 
 #[tauri::command]

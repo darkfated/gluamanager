@@ -133,8 +133,11 @@ pub async fn preview_install(root: &Path, source_url: &str) -> AppResult<Install
         items: plan
             .targets
             .into_iter()
-            .map(|remote| InstallPlanItem {
+            .enumerate()
+            .map(|(index, remote)| InstallPlanItem {
                 name: install_name(&remote.manifest, &remote.manifest.info.name),
+                source_url: remote.source_url,
+                required: index == 0,
             })
             .collect(),
     })
@@ -427,6 +430,7 @@ async fn resolve_install_plan(root: &Path, source_url: &str) -> AppResult<Resolv
     let mut ordered_keys = Vec::<String>::new();
     let mut stack = vec![(source_url.trim().to_string(), false)];
     let mut root_name = String::new();
+    let root_key = source_key(source_url);
 
     while let Some((url, expanded)) = stack.pop() {
         let key = source_key(&url);
@@ -473,10 +477,17 @@ async fn resolve_install_plan(root: &Path, source_url: &str) -> AppResult<Resolv
         );
     }
 
-    let targets = ordered_keys
-        .into_iter()
-        .filter_map(|key| resolved.remove(&key))
-        .collect::<Vec<_>>();
+    let mut targets = Vec::new();
+    if let Some(root) = resolved.remove(&root_key) {
+        targets.push(root);
+    }
+
+    targets.extend(
+        ordered_keys
+            .into_iter()
+            .filter(|key| key != &root_key)
+            .filter_map(|key| resolved.remove(&key)),
+    );
 
     Ok(ResolvedInstallPlan { root_name, targets })
 }

@@ -41,6 +41,8 @@ pub struct AvailableAddonView {
 #[serde(rename_all = "camelCase")]
 pub struct InstallPlanItem {
     pub name: String,
+    pub source_url: String,
+    pub required: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]

@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from "vue";
+import { computed, reactive, watch } from "vue";
 
 import ReadmeContent from "./ReadmeContent.vue";
 
@@ -69,13 +69,50 @@ const canInstall = computed(
   () => !isInstalled.value && !props.addon?.installed && !props.busy && !props.installPlan,
 );
 const canRemove = computed(() => isInstalled.value && !props.busy && Boolean(props.addon?.addonPath));
+const selection = reactive({});
+const selectedCount = computed(() =>
+  props.installPlan?.items?.filter((item) => selection[item.sourceUrl]).length ?? 0,
+);
+
+watch(
+  () => props.installPlan,
+  (plan) => {
+    for (const key of Object.keys(selection)) {
+      delete selection[key];
+    }
+
+    if (!plan?.items?.length) {
+      return;
+    }
+
+    for (const item of plan.items) {
+      selection[item.sourceUrl] = Boolean(item.required);
+    }
+  },
+  { immediate: true },
+);
+
+function toggleDependency(item) {
+  if (item.required) {
+    return;
+  }
+
+  selection[item.sourceUrl] = !selection[item.sourceUrl];
+}
+
+function confirmInstall() {
+  const selected = props.installPlan?.items
+    ?.filter((item) => selection[item.sourceUrl])
+    .map((item) => item.sourceUrl) ?? [];
+
+  emit("install-confirm", selected);
+}
 </script>
 
 <template>
   <Teleport to="body">
-    <transition name="fade">
-      <div v-if="open && addon" class="modal-shell" @click.self="emit('close')">
-        <div class="modal-card panel">
+    <div v-if="open && addon" class="modal-shell" @click.self="emit('close')">
+      <div class="modal-card panel">
           <header class="modal-card__header">
             <div class="modal-card__headline">
               <h3>{{ addon.name || t("common.notSpecified") }}</h3>
@@ -233,24 +270,41 @@ const canRemove = computed(() => isInstalled.value && !props.busy && Boolean(pro
             <div class="install-plan__copy">
               <h4>{{ t("install.confirmTitle") }}</h4>
               <p>{{ tf("install.confirmText", { root: installPlan.rootName }) }}</p>
+              <p class="install-plan__count">{{ selectedCount }} / {{ installPlan.items?.length || 0 }}</p>
             </div>
             <div class="install-plan__list">
-              <div v-for="(item, index) in installPlan.items" :key="`${item.name}-${index}`" class="install-plan__item">
-                <strong>{{ item.name }}</strong>
-              </div>
+              <label
+                v-for="(item, index) in installPlan.items"
+                :key="`${item.sourceUrl}-${index}`"
+                class="install-plan__item"
+                :class="{ 'is-required': item.required }"
+              >
+                <input
+                  class="install-plan__checkbox"
+                  type="checkbox"
+                  :checked="selection[item.sourceUrl]"
+                  :disabled="item.required || busy"
+                  @change="toggleDependency(item)"
+                />
+                <span>
+                  <strong>{{ item.name }}</strong>
+                  <small>
+                    {{ item.required ? t("install.required") : item.sourceUrl }}
+                  </small>
+                </span>
+              </label>
             </div>
             <div class="install-plan__actions">
               <button class="button button--ghost" type="button" @click="emit('install-cancel')">
                 {{ t("install.cancel") }}
               </button>
-              <button class="button button--primary" type="button" :disabled="busy" @click="emit('install-confirm')">
+              <button class="button button--primary" type="button" :disabled="busy" @click="confirmInstall">
                 {{ t("install.accept") }}
               </button>
             </div>
           </section>
-        </div>
       </div>
-    </transition>
+    </div>
   </Teleport>
 </template>
 
@@ -261,8 +315,9 @@ const canRemove = computed(() => isInstalled.value && !props.busy && Boolean(pro
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: rgba(6, 10, 16, 0.76);
+  background: rgba(6, 10, 16, 0.82);
   z-index: 100;
+  user-select: none;
 }
 
 .modal-card {
@@ -306,6 +361,11 @@ const canRemove = computed(() => isInstalled.value && !props.busy && Boolean(pro
   overflow-wrap: anywhere;
 }
 
+.modal-card,
+.modal-card * {
+  user-select: none;
+}
+
 .modal-card__header h3 {
   font-size: 0.9rem;
   font-weight: 600;
@@ -334,8 +394,8 @@ const canRemove = computed(() => isInstalled.value && !props.busy && Boolean(pro
 
 .tab-button.is-active {
   color: var(--text);
-  border-color: rgba(125, 211, 252, 0.34);
-  background: rgba(14, 165, 233, 0.1);
+  border-color: rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .modal-card__info-grid {
@@ -364,6 +424,7 @@ const canRemove = computed(() => isInstalled.value && !props.busy && Boolean(pro
   box-shadow: none;
   overflow: hidden;
   padding: 0.75rem 0.8rem;
+  background: rgba(255, 255, 255, 0.015);
 }
 
 .detail-row span,
@@ -386,7 +447,7 @@ const canRemove = computed(() => isInstalled.value && !props.busy && Boolean(pro
   padding: 0;
   border: 0;
   background: none;
-  color: var(--accent-2);
+  color: var(--text);
   text-align: left;
   cursor: pointer;
   overflow-wrap: anywhere;
@@ -427,6 +488,7 @@ const canRemove = computed(() => isInstalled.value && !props.busy && Boolean(pro
   gap: 0.75rem;
   padding: 0.75rem 0.8rem;
   border-radius: 0.8rem;
+  background: rgba(255, 255, 255, 0.015);
 }
 
 .install-plan__copy h4 {
@@ -441,6 +503,12 @@ const canRemove = computed(() => isInstalled.value && !props.busy && Boolean(pro
   line-height: 1.35;
 }
 
+.install-plan__count {
+  margin-top: 0.35rem;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
 .install-plan__list {
   display: grid;
   gap: 0.5rem;
@@ -450,15 +518,61 @@ const canRemove = computed(() => isInstalled.value && !props.busy && Boolean(pro
 }
 
 .install-plan__item {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.85rem;
   align-items: center;
-  padding: 0.6rem 0.75rem;
-  border-radius: 0.75rem;
-  background: #161b23;
-  border: 1px solid rgba(148, 163, 184, 0.12);
+  padding: 0.78rem 0.85rem;
+  border-radius: 0.8rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(148, 163, 184, 0.1);
   font-size: 0.82rem;
+}
+
+.install-plan__item.is-required {
+  border-color: rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.install-plan__checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0;
+  border-radius: 0.3rem;
+  border: 1.5px solid rgba(148, 163, 184, 0.38);
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.install-plan__checkbox:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.install-plan__checkbox:disabled {
+  cursor: not-allowed;
+  opacity: 0.82;
+}
+
+.install-plan__checkbox:focus-visible {
+  outline: 2px solid rgba(95, 134, 255, 0.4);
+  outline-offset: 2px;
+}
+
+.install-plan__item strong,
+.install-plan__item small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.install-plan__item small {
+  margin-top: 0.15rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.25;
 }
 
 .icon-button {
