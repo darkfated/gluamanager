@@ -15,7 +15,5 @@ pub enum AppError {
     #[error("Updater error: {0}")]
     Updater(#[from] tauri_plugin_updater::Error),
     #[error("{0}")]
-    InvalidGithubUrl(String),
-    #[error("{0}")]
     Unexpected(String),
 }

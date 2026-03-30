@@ -2,65 +2,63 @@
 
 Desktop addon manager for Garry's Mod.
 
-Each addon has a `.addon` file in its root directory. The application detects these folders, shows installed addons, checks their versions on GitHub, updates them, and can install new addons from external sources.
+Language: [🇺🇸 English](./README.md) | [🇷🇺 Русский](./README_RU.md)
 
-## 🔥 How It Works
+GLuaManager helps you keep a Garry's Mod workspace organized: it scans installed addons, checks them against remote metadata, shows what can be updated, and installs new addons from metadata URLs.
 
-The application has two main workflows.
+## 🔥 How it works
 
-The first workflow is working with already installed addons:
+There are two separate flows.
 
-- select an addons directory
-- the application scans it for folders containing a `.addon` file
-- for each addon, it downloads the remote `.addon` directly from the GitHub branch
-- if the remote `version` differs from the local one, the addon is considered updatable
-- when updating, it downloads the archive from the same branch and extracts it over the local folder
+### 🔗 Data flow
 
-The second workflow is installing new addons:
+The app follows a short chain:
 
-- sources are added in the settings
-- a source is a URL to a JSON file containing an array of `url + branch` objects
-- the application reads these entries, downloads remote `.addon` files, and shows the available addons
-- the selected addon is installed into the current addons directory
+- a **source** is a URL stored in Settings
+- each source points to an addon **metadata JSON**
+- the metadata contains the addon `info` and the direct `url` for the archive
+- the archive is what gets downloaded and installed
 
-> [!WARNING]
-> This is not a full-featured package manager like modern solutions (npm, pip, etc.). Due to Garry's Mod's architecture, addons cannot be isolated from each other, which limits dependency management. Additionally, there is no real version control - instead of git releases or commits, version designations are stored in the `.addon` metafile.
+That means a source can point to metadata on GitHub, on your own site, or anywhere else that serves a valid JSON file.
 
-## 👀 Media
+### 📦 Installed addons
 
-### Main Page
+- choose your Garry's Mod addons folder
+- the app scans folders that contain a `.addon` manifest
+- each installed addon keeps its own local metadata
+- the app remembers where that addon came from through a small sidecar file
+- when you check updates, it loads the saved metadata source again and compares versions
+- if versions differ, the addon is marked as updateable
+- when you update, the app downloads the archive from the manifest `url` and applies it over the local folder
 
-<img width="1353" height="897" alt="image" src="https://github.com/user-attachments/assets/e4c23927-b356-4d1f-8bfb-5d98e9945c9e" />
+### 🌐 Remote catalog
 
-### Settings Page
+- add one or more source URLs in Settings
+- each source points to an addon metadata JSON file
+- the app loads those metadata files and builds the remote catalog
+- opening an addon shows its metadata, download URL, dependencies, and local README if it exists
+- installing an addon resolves dependency metadata first and shows a plan before anything is downloaded
 
-<img width="1353" height="897" alt="image" src="https://github.com/user-attachments/assets/6944c179-ecad-46ac-9aa2-48e601d4b232" />
+> [!NOTE]
+> GLuaManager is not a package manager. Garry's Mod addons share one filesystem namespace, so the app focuses on visibility, dependency warnings, and controlled installation.
 
-### Modal Menu
+## 🧩 Metadata format
 
-<img width="1353" height="897" alt="image" src="https://github.com/user-attachments/assets/bcb75ec8-6e76-4d27-bcf2-2e135e170c99" />
-
-## `.addon` Format
-
-`.addon` is a regular JSON file located in the root of the addon.
+`.addon` is a normal JSON file stored in the addon root.
 
 Example:
 
 ```json
 {
-  "name": "My Addon",
-  "description": "Short description",
-  "author": "username",
-  "version": "1.2.0",
-  "github": {
-    "url": "username/repo",
-    "branch": "master"
+  "info": {
+    "name": "Test addon",
+    "description": "Example addon for documentation",
+    "author": "darkfated"
   },
+  "version": "1.0.0",
+  "url": "https://example.com/test-addon.zip",
   "dependencies": [
-    {
-      "url": "username/library-one",
-      "branch": "master"
-    }
+    "https://example.com/library-one.json"
   ],
   "preserve": ["lua/autorun/myaddon_config.lua", "data", "materials/custom/**"]
 }
@@ -68,62 +66,54 @@ Example:
 
 Fields:
 
-- `name` - addon name
-- `description` - short description
-- `author` - author
-- `version` - current addon version
-- `github.url` - GitHub repository in `username/repo` format
-- `github.branch` - branch used to fetch the `.addon` file and the archive for installation and updates
-- `dependencies` - list of dependencies that will be installed together with the addon
-- `preserve` - list of files and paths that must not be overwritten or deleted during update
+- `info.name` - addon name
+- `info.description` - short description
+- `info.author` - addon author
+- `version` - installed and remote version number
+- `url` - direct download URL for the addon archive
+- `dependencies` - list of dependency metadata URLs
+- `preserve` - files or paths that must not be overwritten during update
 
 `preserve` supports:
 
 - a specific file, for example `lua/autorun/myaddon_config.lua`
-- an entire directory, for example `data`
+- a whole directory, for example `data`
 - a glob pattern, for example `materials/custom/**`
 
 All paths are relative to the addon folder.
 
-`dependencies` is defined as an array of objects in the same format as `github`:
+## 🗂️ Sources and examples
 
-```json
-[
-  {
-    "url": "username/library-one",
-    "branch": "main"
-  },
-  {
-    "url": "username/library-two",
-    "branch": "master"
-  }
-]
-```
-
-During installation, the application resolves dependencies recursively, builds the final list, and shows a confirmation dialog before downloading.
-
-## Sources
-
-A source is a URL to a JSON file containing an array of repositories with an explicitly specified branch.
+Sources are stored as a list of metadata URLs.
 
 Example:
 
 ```json
 [
-  {
-    "url": "username/addon-one",
-    "branch": "main"
-  },
-  {
-    "url": "username/addon-two",
-    "branch": "master"
-  }
+  "https://example.com/mantle.json",
+  "https://example.com/newspawnmenu.json",
+  "https://example.com/thirdperson.json"
 ]
 ```
 
-## Build
+If you want to see a working layout, look at the `exampleMeta/` folder in this repository. It contains sample metadata files for `mantle`, `newspawnmenu`, and `thirdperson`, and the default source list points to those examples.
 
-On Debian / Ubuntu Linux, the following system dependencies are required:
+They show the same format you can host anywhere that serves valid JSON.
+
+## ⚙️ Installation and updates
+
+Installation and updates follow the same rule: the app always uses the addon metadata source as the reference point.
+
+- install: resolve dependencies, show the plan, then download the archive from `url`
+- update: reload metadata from the saved source URL and compare `version`
+- match: the addon is up to date
+- mismatch: the addon can be updated
+
+After installation, GLuaManager stores the source URL next to the addon so future checks stay tied to the same metadata source.
+
+## 🛠️ Build requirements
+
+On Debian / Ubuntu Linux you need:
 
 ```bash
 sudo apt update
@@ -151,7 +141,7 @@ cd ui
 npm install
 ```
 
-## Running
+## ▶️ Running
 
 Development:
 

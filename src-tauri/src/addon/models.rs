@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use crate::addon::{GithubSource, Manifest};
+use crate::addon::Manifest;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -9,11 +9,12 @@ pub struct AddonView {
     pub description: String,
     pub author: String,
     pub version: String,
-    pub repository_url: String,
-    pub branch: String,
+    pub url: String,
     pub preserve: Vec<String>,
-    pub dependencies: Vec<GithubSource>,
+    pub dependencies: Vec<String>,
     pub addon_path: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_url: Option<String>,
     pub remote_version: Option<String>,
     pub has_update: bool,
     pub has_error: bool,
@@ -27,10 +28,11 @@ pub struct AvailableAddonView {
     pub description: String,
     pub author: String,
     pub version: String,
-    pub repository_url: String,
-    pub branch: String,
+    pub url: String,
     pub preserve: Vec<String>,
-    pub dependencies: Vec<GithubSource>,
+    pub dependencies: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_url: Option<String>,
     pub installed: bool,
 }
 
@@ -38,8 +40,6 @@ pub struct AvailableAddonView {
 #[serde(rename_all = "camelCase")]
 pub struct InstallPlanItem {
     pub name: String,
-    pub repository_url: String,
-    pub branch: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -61,21 +61,22 @@ impl AddonView {
     pub fn from_manifest(
         manifest: &Manifest,
         addon_path: String,
+        source_url: Option<String>,
         remote_version: Option<String>,
         has_update: bool,
         has_error: bool,
         status: impl Into<String>,
     ) -> Self {
         Self {
-            name: manifest.name.clone(),
-            description: manifest.description.clone(),
-            author: manifest.author.clone(),
+            name: manifest.info.name.clone(),
+            description: manifest.info.description.clone(),
+            author: manifest.info.author.clone(),
             version: manifest.version.clone(),
-            repository_url: manifest.github.url.clone(),
-            branch: manifest.github.branch.clone(),
+            url: manifest.url.clone(),
             preserve: manifest.preserve.clone(),
             dependencies: manifest.dependencies.clone(),
             addon_path,
+            source_url,
             remote_version,
             has_update,
             has_error,
@@ -85,16 +86,16 @@ impl AddonView {
 }
 
 impl AvailableAddonView {
-    pub fn from_manifest(manifest: &Manifest, installed: bool) -> Self {
+    pub fn from_manifest(manifest: &Manifest, source_url: Option<String>, installed: bool) -> Self {
         Self {
-            name: manifest.name.clone(),
-            description: manifest.description.clone(),
-            author: manifest.author.clone(),
+            name: manifest.info.name.clone(),
+            description: manifest.info.description.clone(),
+            author: manifest.info.author.clone(),
             version: manifest.version.clone(),
-            repository_url: manifest.github.url.clone(),
-            branch: manifest.github.branch.clone(),
+            url: manifest.url.clone(),
             preserve: manifest.preserve.clone(),
             dependencies: manifest.dependencies.clone(),
+            source_url,
             installed,
         }
     }

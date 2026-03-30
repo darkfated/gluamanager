@@ -3,12 +3,11 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
+use url::Url;
 
 use crate::error::{AppError, AppResult};
 
 const SETTINGS_FILE_NAME: &str = "settings.json";
-const DEFAULT_SOURCE_URL: &str =
-    "https://raw.githubusercontent.com/darkfated/gluamanager/refs/heads/master/default_source.json";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -73,7 +72,7 @@ fn settings_path(app: &AppHandle) -> AppResult<PathBuf> {
 }
 
 fn default_sources() -> Vec<String> {
-    vec![DEFAULT_SOURCE_URL.to_string()]
+    Vec::new()
 }
 
 fn normalize_settings(settings: AppSettings) -> AppSettings {
@@ -91,6 +90,11 @@ fn normalize_sources(items: Vec<String>) -> Vec<String> {
         let value = item.trim();
         if value.is_empty() {
             continue;
+        }
+
+        match Url::parse(value) {
+            Ok(parsed) if matches!(parsed.scheme(), "http" | "https") => {}
+            _ => continue,
         }
 
         if seen.insert(value.to_string()) {

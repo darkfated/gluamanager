@@ -4,6 +4,7 @@ use std::io::{Cursor, Read, Write};
 use std::path::{Component, Path, PathBuf};
 use std::sync::Arc;
 
+use serde::{Deserialize, Serialize};
 use tokio::sync::Semaphore;
 use tokio::task::JoinSet;
 use walkdir::WalkDir;
@@ -20,17 +21,25 @@ use crate::github;
 struct DiscoveredAddon {
     manifest: Manifest,
     addon_path: PathBuf,
+    source_url: Option<String>,
 }
 
 #[derive(Debug, Clone)]
 struct ResolvedInstallPlan {
     root_name: String,
-    targets: Vec<github::RemoteManifest>,
+    targets: Vec<ResolvedAddon>,
 }
 
-const GITHUB_CONCURRENCY_LIMIT: usize = 6;
+#[derive(Debug, Clone)]
+struct ResolvedAddon {
+    manifest: Manifest,
+    source_url: String,
+}
+
+const FETCH_CONCURRENCY_LIMIT: usize = 6;
 const BACKUP_ROOT_DIR: &str = ".gluamanager-backups";
 const LAST_UPDATE_BACKUP_DIR: &str = "last-update";
+const SOURCE_INFO_NAME: &str = ".gluamanager-source.json";
 const STATUS_ACTUAL: &str = "Actual";
 const STATUS_UPDATE_AVAILABLE: &str = "Update available";
 
@@ -59,6 +68,7 @@ pub async fn check_addon(addon_path: &Path) -> AppResult<AddonView> {
     let addon = DiscoveredAddon {
         manifest,
         addon_path: addon_path.to_path_buf(),
+        source_url: load_source_url(addon_path)?,
     };
 
     Ok(check_discovered_addon(addon).await)
@@ -73,77 +83,35 @@ pub async fn load_addon_readme(addon_path: &Path) -> AppResult<Option<ReadmeView
         }));
     }
 
-    let manifest_path = addon_path.join(MANIFEST_NAME);
-    let manifest = Manifest::load(&manifest_path)?;
-    let (owner, repo) = crate::addon::parse_github_url(&manifest.github.url)?;
-    let branch = manifest.github.branch.trim();
-    let content = github::fetch_readme(&manifest).await?;
-
-    Ok(content.map(|content| ReadmeView {
-        content,
-        base_url: Some(format!(
-            "https://raw.githubusercontent.com/{owner}/{repo}/{branch}/"
-        )),
-        local_base_path: None,
-    }))
+    Ok(None)
 }
 
-pub async fn load_available_addon(
-    root: &Path,
-    repository_url: &str,
-    branch: &str,
-) -> AppResult<AvailableAddonView> {
-    let remote = github::fetch_remote_manifest_from_repo_url(repository_url, branch).await?;
-    let installed = discover_root(root)
+pub async fn load_available_addon(root: &Path, source_url: &str) -> AppResult<AvailableAddonView> {
+    let remote = github::fetch_manifest_from_url(source_url).await?;
+    let installed = installed_source_map(root)
         .unwrap_or_default()
-        .into_iter()
-        .any(|addon| {
-            addon
-                .manifest
-                .github
-                .url
-                .trim()
-                .eq_ignore_ascii_case(repository_url.trim())
-        });
+        .contains_key(&source_key(source_url));
 
     Ok(AvailableAddonView::from_manifest(
-        &remote.manifest,
+        &remote,
+        Some(source_url.to_string()),
         installed,
     ))
 }
 
-pub async fn load_available_addon_readme(
-    repository_url: &str,
-    branch: &str,
-) -> AppResult<Option<ReadmeView>> {
-    let (owner, repo) = crate::addon::parse_github_url(repository_url)?;
-    let branch = branch.trim();
-    let content = github::fetch_readme_from_repo_url(repository_url, branch).await?;
-
-    Ok(content.map(|content| ReadmeView {
-        content,
-        base_url: Some(format!(
-            "https://raw.githubusercontent.com/{owner}/{repo}/{branch}/"
-        )),
-        local_base_path: None,
-    }))
+pub async fn load_available_addon_readme(_source_url: &str) -> AppResult<Option<ReadmeView>> {
+    Ok(None)
 }
 
-pub async fn preview_install(
-    root: &Path,
-    repository_url: &str,
-    branch: &str,
-) -> AppResult<InstallPlanView> {
-    let plan = resolve_install_plan(root, repository_url, branch).await?;
+pub async fn preview_install(root: &Path, source_url: &str) -> AppResult<InstallPlanView> {
+    let plan = resolve_install_plan(root, source_url).await?;
     Ok(InstallPlanView {
         root_name: plan.root_name,
         items: plan
             .targets
             .into_iter()
             .map(|remote| InstallPlanItem {
-                name: install_name(&remote.manifest, &remote.repo.repo),
-                repository_url: remote.manifest.github.url.clone(),
-                branch: remote.manifest.github.branch.clone(),
+                name: install_name(&remote.manifest, &remote.manifest.info.name),
             })
             .collect(),
     })
@@ -152,26 +120,33 @@ pub async fn preview_install(
 pub async fn update_addon(addon_path: &Path) -> AppResult<AddonView> {
     let manifest_path = addon_path.join(MANIFEST_NAME);
     let local = Manifest::load(&manifest_path)?;
-    let remote = github::fetch_remote_manifest(&local).await?;
+    let source_url = load_source_url(addon_path)?;
+    let Some(source_url) = source_url else {
+        return Err(AppError::Unexpected(
+            "Addon source metadata is missing.".into(),
+        ));
+    };
+    let remote = github::fetch_manifest_from_url(&source_url).await?;
 
-    if versions_match(&local.version, &remote.manifest.version) {
+    if versions_match(&local.version, &remote.version) {
         return Ok(AddonView::from_manifest(
-            &remote.manifest,
+            &remote,
             addon_path.display().to_string(),
-            Some(remote.manifest.version.clone()),
+            Some(source_url),
+            Some(remote.version.clone()),
             false,
             false,
             STATUS_ACTUAL,
         ));
     }
 
-    let archive = github::download_repository_archive(&remote).await?;
-    let preserve = merge_preserve(&local.preserve, &remote.manifest.preserve);
+    let archive = github::download_archive_from_url(&remote.url).await?;
+    let preserve = merge_preserve(&local.preserve, &remote.preserve);
     let backup_path = create_update_backup(addon_path)?;
     let update_result = (|| -> AppResult<()> {
         let extracted = extract_archive(addon_path, &archive, &preserve)?;
         remove_stale_files(addon_path, &extracted, &preserve)?;
-        fs::write(&manifest_path, &remote.raw)?;
+        fs::write(&manifest_path, serde_json::to_vec_pretty(&remote)?)?;
         Ok(())
     })();
 
@@ -183,9 +158,10 @@ pub async fn update_addon(addon_path: &Path) -> AppResult<AddonView> {
     }
 
     Ok(AddonView::from_manifest(
-        &remote.manifest,
+        &remote,
         addon_path.display().to_string(),
-        Some(remote.manifest.version.clone()),
+        Some(source_url),
+        Some(remote.version.clone()),
         false,
         false,
         STATUS_ACTUAL,
@@ -235,85 +211,62 @@ pub async fn list_available_addons(
     root: &Path,
     source_urls: &[String],
 ) -> AppResult<Vec<AvailableAddonView>> {
-    let installed_addons = discover_root(root).unwrap_or_default();
-    let installed_by_repo: HashMap<String, String> = installed_addons
-        .iter()
-        .filter(|addon| !addon.manifest.github.url.trim().is_empty())
-        .map(|addon| {
-            (
-                addon.manifest.github.url.trim().to_lowercase(),
-                addon.addon_path.display().to_string(),
-            )
-        })
-        .collect();
+    let installed_sources = installed_source_map(root)?;
+    let mut available = Vec::new();
 
-    let mut seen = HashSet::new();
-    let mut candidates = Vec::new();
     for source_url in source_urls {
-        let repositories = github::load_source_repositories(source_url).await?;
-        for repository in repositories {
-            let repository_url = format!("{}/{}", repository.owner, repository.repo);
-            let normalized = repository_url.trim().to_lowercase();
-            if normalized.is_empty() || !seen.insert(normalized.clone()) {
-                continue;
-            }
-
-            let installed_path = installed_by_repo.get(&normalized).cloned();
-            candidates.push((repository_url, repository.branch, installed_path));
-        }
+        let remote = match github::fetch_manifest_from_url(source_url).await {
+            Ok(remote) => remote,
+            Err(_) => continue,
+        };
+        let installed = installed_sources.contains_key(&source_key(source_url));
+        available.push(AvailableAddonView::from_manifest(
+            &remote,
+            Some(source_url.clone()),
+            installed,
+        ));
     }
-
-    let mut available = run_limited(
-        candidates,
-        |(repository_url, branch, installed_path)| async move {
-            match github::fetch_remote_manifest_from_repo_url(&repository_url, &branch).await {
-                Ok(remote) => Some(AvailableAddonView::from_manifest(
-                    &remote.manifest,
-                    installed_path.is_some(),
-                )),
-                Err(_) => None,
-            }
-        },
-    )
-    .await?
-    .into_iter()
-    .flatten()
-    .collect::<Vec<_>>();
 
     available.sort_by(|left, right| left.name.to_lowercase().cmp(&right.name.to_lowercase()));
     Ok(available)
 }
 
-pub async fn install_addon(
-    root: &Path,
-    repository_url: &str,
-    branch: &str,
-) -> AppResult<AddonView> {
+pub async fn install_addon(root: &Path, source_url: &str) -> AppResult<AddonView> {
     validate_root(root)?;
-    let plan = resolve_install_plan(root, repository_url, branch).await?;
-    let root_key = repository_key(repository_url);
+    let plan = resolve_install_plan(root, source_url).await?;
+    let root_key = source_key(source_url);
 
     for remote in &plan.targets {
         install_remote(root, remote).await?;
     }
 
-    if let Some(installed_root) = find_installed_addon_by_repo(root, &root_key)? {
+    if let Some(installed_root) = find_installed_addon_by_source(root, &root_key)? {
         return check_addon(&installed_root.addon_path).await;
     }
 
     Err(AppError::Unexpected(format!(
         "Failed to find installed addon {} after installation.",
-        repository_url
+        source_url
     )))
 }
 
 async fn check_discovered_addon(addon: DiscoveredAddon) -> AddonView {
-    match github::fetch_remote_manifest(&addon.manifest).await {
+    let Some(source_url) = addon.source_url.clone() else {
+        return addon_view(
+            &addon,
+            None,
+            false,
+            true,
+            "Verification failed: addon source metadata is missing.",
+        );
+    };
+
+    match github::fetch_manifest_from_url(&source_url).await {
         Ok(remote) => {
-            let has_update = !versions_match(&addon.manifest.version, &remote.manifest.version);
+            let has_update = !versions_match(&addon.manifest.version, &remote.version);
             addon_view(
                 &addon,
-                Some(remote.manifest.version),
+                Some(remote.version),
                 has_update,
                 false,
                 if has_update {
@@ -340,7 +293,7 @@ where
     F: Fn(T) -> Fut + Send + Sync + 'static,
     Fut: std::future::Future<Output = R> + Send + 'static,
 {
-    let semaphore = Arc::new(Semaphore::new(GITHUB_CONCURRENCY_LIMIT));
+    let semaphore = Arc::new(Semaphore::new(FETCH_CONCURRENCY_LIMIT));
     let task_fn = Arc::new(task_fn);
     let mut join_set = JoinSet::new();
 
@@ -362,7 +315,7 @@ where
             Ok(value) => results.push(value),
             Err(error) => {
                 return Err(AppError::Unexpected(format!(
-                    "Background GitHub check failed: {error}"
+                    "Background metadata check failed: {error}"
                 )));
             }
         }
@@ -391,26 +344,17 @@ fn versions_match(local: &str, remote: &str) -> bool {
     local.trim() == remote.trim()
 }
 
-async fn resolve_install_plan(
-    root: &Path,
-    repository_url: &str,
-    branch: &str,
-) -> AppResult<ResolvedInstallPlan> {
+async fn resolve_install_plan(root: &Path, source_url: &str) -> AppResult<ResolvedInstallPlan> {
     validate_root(root)?;
 
-    let installed_by_repo = installed_repo_map(root)?;
-    let mut branch_by_repo = HashMap::<String, String>::new();
-    let mut resolved = HashMap::<String, github::RemoteManifest>::new();
+    let installed_by_source = installed_source_map(root)?;
+    let mut resolved = HashMap::<String, ResolvedAddon>::new();
     let mut ordered_keys = Vec::<String>::new();
-    let mut stack = vec![(
-        repository_url.trim().to_string(),
-        branch.trim().to_string(),
-        false,
-    )];
+    let mut stack = vec![(source_url.trim().to_string(), false)];
     let mut root_name = String::new();
 
-    while let Some((url, current_branch, expanded)) = stack.pop() {
-        let key = repository_key(&url);
+    while let Some((url, expanded)) = stack.pop() {
+        let key = source_key(&url);
         if ordered_keys.iter().any(|item| item == &key) {
             continue;
         }
@@ -419,60 +363,39 @@ async fn resolve_install_plan(
         }
 
         if expanded {
-            if resolved.contains_key(&key) && !installed_by_repo.contains_key(&key) {
+            if resolved.contains_key(&key) && !installed_by_source.contains_key(&key) {
                 ordered_keys.push(key);
             }
             continue;
         }
 
-        if let Some(existing_branch) = branch_by_repo.get(&key) {
-            if existing_branch != &current_branch {
-                return Err(AppError::Unexpected(format!(
-                    "Repository {} has conflicting dependency branches: {} and {}.",
-                    url, existing_branch, current_branch
-                )));
-            }
-        } else {
-            branch_by_repo.insert(key.clone(), current_branch.clone());
-        }
-
-        let remote = github::fetch_remote_manifest_from_repo_url(&url, &current_branch).await?;
+        let remote = github::fetch_manifest_from_url(&url).await?;
         if root_name.is_empty() {
-            root_name = install_name(&remote.manifest, &remote.repo.repo);
+            root_name = install_name(&remote, &remote.info.name);
         }
 
-        stack.push((url.clone(), current_branch.clone(), true));
-        for dependency in remote.manifest.dependencies.iter().rev() {
-            let dependency_url = dependency.url.trim();
-            let dependency_branch = dependency.branch.trim();
-            if dependency_url.is_empty() || dependency_branch.is_empty() {
+        stack.push((url.clone(), true));
+        for dependency_url in remote.dependencies.iter().rev() {
+            let dependency_url = dependency_url.trim();
+            if dependency_url.is_empty() {
                 return Err(AppError::Unexpected(format!(
-                    "Addon {} dependencies missing URL or branch.",
-                    install_name(&remote.manifest, &remote.repo.repo)
+                    "Addon {} dependencies contain an empty URL.",
+                    install_name(&remote, &remote.info.name)
                 )));
             }
 
-            let dependency_key = repository_key(dependency_url);
-            if let Some(existing_branch) = branch_by_repo.get(&dependency_key) {
-                if existing_branch != dependency_branch {
-                    return Err(AppError::Unexpected(format!(
-                        "Repository {} has conflicting dependency branches: {} and {}.",
-                        dependency_url, existing_branch, dependency_branch
-                    )));
-                }
-            } else {
-                branch_by_repo.insert(dependency_key, dependency_branch.to_string());
-            }
-
-            if !installed_by_repo.contains_key(&repository_key(dependency_url)) {
-                stack.push((
-                    dependency_url.to_string(),
-                    dependency_branch.to_string(),
-                    false,
-                ));
+            let dependency_key = source_key(dependency_url);
+            if !installed_by_source.contains_key(&dependency_key) {
+                stack.push((dependency_url.to_string(), false));
             }
         }
-        resolved.insert(key, remote);
+        resolved.insert(
+            key,
+            ResolvedAddon {
+                manifest: remote,
+                source_url: url,
+            },
+        );
     }
 
     let targets = ordered_keys
@@ -503,27 +426,30 @@ fn discover_root(root: &Path) -> AppResult<Vec<DiscoveredAddon>> {
 
     found.sort_by(|left, right| {
         left.manifest
+            .info
             .name
             .to_lowercase()
-            .cmp(&right.manifest.name.to_lowercase())
+            .cmp(&right.manifest.info.name.to_lowercase())
     });
 
     Ok(found)
 }
 
-fn installed_repo_map(root: &Path) -> AppResult<HashMap<String, DiscoveredAddon>> {
+fn installed_source_map(root: &Path) -> AppResult<HashMap<String, DiscoveredAddon>> {
     Ok(discover_root(root)?
         .into_iter()
-        .filter(|addon| !addon.manifest.github.url.trim().is_empty())
-        .map(|addon| (repository_key(&addon.manifest.github.url), addon))
+        .filter_map(|addon| {
+            let source_url = addon.source_url.clone()?;
+            Some((source_key(&source_url), addon))
+        })
         .collect())
 }
 
-fn find_installed_addon_by_repo(
+fn find_installed_addon_by_source(
     root: &Path,
-    repository_key: &str,
+    source_key: &str,
 ) -> AppResult<Option<DiscoveredAddon>> {
-    Ok(installed_repo_map(root)?.remove(repository_key))
+    Ok(installed_source_map(root)?.remove(source_key))
 }
 
 fn try_manifest(dir: &Path) -> AppResult<Option<DiscoveredAddon>> {
@@ -536,7 +462,42 @@ fn try_manifest(dir: &Path) -> AppResult<Option<DiscoveredAddon>> {
     Ok(Some(DiscoveredAddon {
         manifest,
         addon_path: dir.to_path_buf(),
+        source_url: load_source_url(dir)?,
     }))
+}
+
+fn source_info_path(addon_path: &Path) -> PathBuf {
+    addon_path.join(SOURCE_INFO_NAME)
+}
+
+fn load_source_url(addon_path: &Path) -> AppResult<Option<String>> {
+    let path = source_info_path(addon_path);
+    if !path.exists() {
+        return Ok(None);
+    }
+
+    let content = fs::read_to_string(path)?;
+    let record: SourceRecord = serde_json::from_str(&content)?;
+    let value = record.source_url.trim().to_string();
+    if value.is_empty() {
+        return Ok(None);
+    }
+
+    Ok(Some(value))
+}
+
+fn save_source_url(addon_path: &Path, source_url: &str) -> AppResult<()> {
+    let path = source_info_path(addon_path);
+    let record = SourceRecord {
+        source_url: source_url.trim().to_string(),
+    };
+    fs::write(path, serde_json::to_vec_pretty(&record)?)?;
+    Ok(())
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct SourceRecord {
+    source_url: String,
 }
 
 fn load_local_readme(addon_path: &Path) -> AppResult<Option<String>> {
@@ -558,6 +519,7 @@ fn addon_view(
     AddonView::from_manifest(
         &addon.manifest,
         addon.addon_path.display().to_string(),
+        addon.source_url.clone(),
         remote_version,
         has_update,
         has_error,
@@ -565,19 +527,23 @@ fn addon_view(
     )
 }
 
-async fn install_remote(root: &Path, remote: &github::RemoteManifest) -> AppResult<()> {
-    let repository_key = repository_key(&remote.manifest.github.url);
-    if find_installed_addon_by_repo(root, &repository_key)?.is_some() {
+async fn install_remote(root: &Path, remote: &ResolvedAddon) -> AppResult<()> {
+    let source_key = source_key(&remote.source_url);
+    if find_installed_addon_by_source(root, &source_key)?.is_some() {
         return Ok(());
     }
 
-    let target_path = unique_install_path(root, &remote.repo.repo);
+    let target_path = unique_install_path(root, &remote.manifest.info.name);
     fs::create_dir_all(&target_path)?;
 
-    let archive = github::download_repository_archive(remote).await?;
+    let archive = github::download_archive_from_url(&remote.manifest.url).await?;
     let extracted = extract_archive(&target_path, &archive, &remote.manifest.preserve)?;
     remove_stale_files(&target_path, &extracted, &remote.manifest.preserve)?;
-    fs::write(target_path.join(MANIFEST_NAME), &remote.raw)?;
+    fs::write(
+        target_path.join(MANIFEST_NAME),
+        serde_json::to_vec_pretty(&remote.manifest)?,
+    )?;
+    save_source_url(&target_path, &remote.source_url)?;
     Ok(())
 }
 
@@ -594,12 +560,12 @@ fn merge_preserve(local: &[String], remote: &[String]) -> Vec<String> {
     merged
 }
 
-fn repository_key(repository_url: &str) -> String {
-    repository_url.trim().to_lowercase()
+fn source_key(source_url: &str) -> String {
+    source_url.trim().to_lowercase()
 }
 
 fn install_name(manifest: &Manifest, fallback: &str) -> String {
-    let value = manifest.name.trim();
+    let value = manifest.info.name.trim();
     if value.is_empty() {
         fallback.to_string()
     } else {

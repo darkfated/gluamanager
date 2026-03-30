@@ -1,0 +1,11 @@
+{
+  "info": {
+    "name": "Mantle",
+    "description": "Library for writing scripts",
+    "author": "darkfated"
+  },
+  "version": "1.6.0",
+  "url": "https://github.com/darkfated/mantle/archive/refs/tags/v1.6.zip",
+  "dependencies": [],
+  "preserve": []
+}

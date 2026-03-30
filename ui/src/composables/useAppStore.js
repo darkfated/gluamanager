@@ -1,7 +1,7 @@
 import { computed, inject, reactive } from "vue";
 
 import { chooseDirectory, hasTauri, invoke } from "../services/tauri.js";
-import { normalizeError, repositoryHref, resolveLocale, t, tf } from "../utils/format.js";
+import { externalHref, isHttpUrl, normalizeError, resolveLocale, t, tf } from "../utils/format.js";
 
 export const appStoreKey = Symbol("app-store");
 
@@ -309,11 +309,8 @@ export function createAppStore() {
     }
   }
 
-  async function openAvailableModal(repositoryUrl, branch) {
-    const addon =
-      state.availableAddons.find(
-        (item) => item.repositoryUrl === repositoryUrl && item.branch === branch,
-      ) ?? null;
+  async function openAvailableModal(sourceUrl) {
+    const addon = state.availableAddons.find((item) => item.sourceUrl === sourceUrl) ?? null;
 
     if (!addon) {
       return;
@@ -333,12 +330,10 @@ export function createAppStore() {
       const [addonResult, readmeResult] = await Promise.allSettled([
         invoke("load_available_addon", {
           rootPath: state.rootPath,
-          repositoryUrl,
-          branch,
+          sourceUrl,
         }),
         invoke("load_available_addon_readme", {
-          repositoryUrl,
-          branch,
+          sourceUrl,
         }),
       ]);
 
@@ -383,7 +378,7 @@ export function createAppStore() {
     }
 
     const addon = state.modalAddon;
-    if (!addon?.repositoryUrl || !addon?.branch) {
+    if (!addon?.sourceUrl) {
       return;
     }
 
@@ -391,8 +386,7 @@ export function createAppStore() {
       state.installPlanLoading = true;
       state.installPlan = await invoke("preview_install", {
         rootPath: state.rootPath,
-        repositoryUrl: addon.repositoryUrl,
-        branch: addon.branch,
+        sourceUrl: addon.sourceUrl,
       });
     } catch (error) {
       setStatusText(normalizeError(error, locale.value));
@@ -403,17 +397,16 @@ export function createAppStore() {
 
   async function confirmInstallPlan() {
     const addon = state.modalAddon;
-    if (!addon?.repositoryUrl || !addon?.branch || !hasTauri()) {
+    if (!addon?.sourceUrl || !hasTauri()) {
       return;
     }
 
     try {
       setBusy(true);
-      setStatus("status.installingAddon", { url: addon.repositoryUrl });
+      setStatus("status.installingAddon", { url: addon.sourceUrl });
       await invoke("install_addon", {
         rootPath: state.rootPath,
-        repositoryUrl: addon.repositoryUrl,
-        branch: addon.branch,
+        sourceUrl: addon.sourceUrl,
       });
       closeInstallPlan();
       closeModal();
@@ -486,6 +479,10 @@ export function createAppStore() {
   async function addSource() {
     const normalized = state.sourceInput.trim();
     if (!normalized) {
+      return;
+    }
+    if (!isHttpUrl(normalized)) {
+      setSourcesStatus("sources.invalid");
       return;
     }
     if (state.sources.includes(normalized)) {
@@ -574,8 +571,8 @@ export function createAppStore() {
     state.installedAddons[index] = updated;
   }
 
-  function repositoryLink(repositoryUrl) {
-    return repositoryHref(repositoryUrl);
+  function externalLink(url) {
+    return externalHref(url);
   }
 
   return {
@@ -610,7 +607,7 @@ export function createAppStore() {
     dismissAppUpdate,
     installAppUpdate,
     openExternalUrl,
-    repositoryLink,
+    externalLink,
   };
 }
 

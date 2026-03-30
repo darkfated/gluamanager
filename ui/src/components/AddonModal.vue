@@ -23,7 +23,7 @@ const props = defineProps({
     type: Function,
     required: true,
   },
-  repositoryLink: {
+  externalLink: {
     type: Function,
     required: true,
   },
@@ -42,7 +42,7 @@ const emit = defineEmits([
 ]);
 
 const isInstalled = computed(() => props.targetType === "installed");
-const repoHref = computed(() => props.repositoryLink(props.addon?.repositoryUrl));
+const downloadHref = computed(() => props.externalLink(props.addon?.url));
 const versionsEqual = computed(() => {
   if (!props.addon?.remoteVersion || !props.addon?.version) {
     return false;
@@ -130,10 +130,6 @@ const canRemove = computed(() => isInstalled.value && !props.busy && Boolean(pro
                 <span>{{ t("modal.folder") }}</span>
                 <strong>{{ isInstalled ? addon.addonPath : rootPath || t("common.notSpecified") }}</strong>
               </article>
-              <article class="detail-row">
-                <span>{{ t("modal.branch") }}</span>
-                <strong>{{ addon.branch || t("common.notSpecified") }}</strong>
-              </article>
             </div>
 
             <div class="info-stack">
@@ -143,16 +139,16 @@ const canRemove = computed(() => isInstalled.value && !props.busy && Boolean(pro
               </article>
 
               <article class="detail-panel panel panel--soft">
-                <span>{{ t("modal.repository") }}</span>
+                <span>{{ t("modal.downloadUrl") }}</span>
                 <button
-                  v-if="repoHref"
+                  v-if="downloadHref"
                   class="link-button"
                   type="button"
-                  @click="emit('open-external', repoHref)"
+                  @click="emit('open-external', downloadHref)"
                 >
-                  {{ addon.repositoryUrl }}
+                  {{ addon.url }}
                 </button>
-                <p v-else>{{ addon.repositoryUrl || t("common.notSpecified") }}</p>
+                <p v-else>{{ addon.url || t("common.notSpecified") }}</p>
               </article>
 
               <article class="detail-panel panel panel--soft">
@@ -172,9 +168,7 @@ const canRemove = computed(() => isInstalled.value && !props.busy && Boolean(pro
                 <span>{{ t("modal.dependencies") }}</span>
                 <div class="tag-list">
                   <span
-                    v-for="item in addon.dependencies?.length
-                      ? addon.dependencies.map((dependency) => `${dependency.url}${dependency.branch ? `#${dependency.branch}` : ''}`)
-                      : [t('modal.noDependencies')]"
+                    v-for="item in addon.dependencies?.length ? addon.dependencies : [t('modal.noDependencies')]"
                     :key="item"
                     class="chip"
                   >
@@ -241,9 +235,8 @@ const canRemove = computed(() => isInstalled.value && !props.busy && Boolean(pro
               <p>{{ tf("install.confirmText", { root: installPlan.rootName }) }}</p>
             </div>
             <div class="install-plan__list">
-              <div v-for="item in installPlan.items" :key="`${item.repositoryUrl}-${item.branch}`" class="install-plan__item">
-                <strong>{{ item.name || item.repositoryUrl }}</strong>
-                <span>{{ item.branch }}</span>
+              <div v-for="(item, index) in installPlan.items" :key="`${item.name}-${index}`" class="install-plan__item">
+                <strong>{{ item.name }}</strong>
               </div>
             </div>
             <div class="install-plan__actions">

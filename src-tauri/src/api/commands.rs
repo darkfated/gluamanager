@@ -65,18 +65,14 @@ async fn load_addon_readme(addon_path: String) -> Result<Option<ReadmeView>, Str
 #[tauri::command]
 async fn load_available_addon(
     root_path: String,
-    repository_url: String,
-    branch: String,
+    source_url: String,
 ) -> Result<AvailableAddonView, String> {
-    handle(update::load_available_addon(&PathBuf::from(root_path), &repository_url, &branch).await)
+    handle(update::load_available_addon(&PathBuf::from(root_path), &source_url).await)
 }
 
 #[tauri::command]
-async fn load_available_addon_readme(
-    repository_url: String,
-    branch: String,
-) -> Result<Option<ReadmeView>, String> {
-    handle(update::load_available_addon_readme(&repository_url, &branch).await)
+async fn load_available_addon_readme(source_url: String) -> Result<Option<ReadmeView>, String> {
+    handle(update::load_available_addon_readme(&source_url).await)
 }
 
 #[tauri::command]
@@ -103,21 +99,13 @@ async fn list_available_addons(
 }
 
 #[tauri::command]
-async fn install_addon(
-    root_path: String,
-    repository_url: String,
-    branch: String,
-) -> Result<AddonView, String> {
-    handle(update::install_addon(&PathBuf::from(root_path), &repository_url, &branch).await)
+async fn install_addon(root_path: String, source_url: String) -> Result<AddonView, String> {
+    handle(update::install_addon(&PathBuf::from(root_path), &source_url).await)
 }
 
 #[tauri::command]
-async fn preview_install(
-    root_path: String,
-    repository_url: String,
-    branch: String,
-) -> Result<InstallPlanView, String> {
-    handle(update::preview_install(&PathBuf::from(root_path), &repository_url, &branch).await)
+async fn preview_install(root_path: String, source_url: String) -> Result<InstallPlanView, String> {
+    handle(update::preview_install(&PathBuf::from(root_path), &source_url).await)
 }
 
 fn handle<T>(result: AppResult<T>) -> Result<T, String> {

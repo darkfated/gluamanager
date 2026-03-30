@@ -22,8 +22,8 @@ function matchesAddon(addon, query) {
     addon.name,
     addon.author,
     addon.description,
-    addon.repositoryUrl,
-    addon.branch,
+    addon.sourceUrl,
+    addon.url,
   ]
     .filter(Boolean)
     .some((value) => String(value).toLowerCase().includes(normalized));
@@ -176,9 +176,9 @@ function openSettingsForSources() {
         <div v-if="filteredAvailableAddons.length" class="desktop-pane__body addon-list">
           <div
             v-for="addon in filteredAvailableAddons"
-            :key="`${addon.repositoryUrl}-${addon.branch}`"
+            :key="addon.sourceUrl || addon.addonPath"
             class="addon-list__item"
-            @click="store.openAvailableModal(addon.repositoryUrl, addon.branch)"
+            @click="store.openAvailableModal(addon.sourceUrl)"
           >
             <AddonCard
               :addon="addon"

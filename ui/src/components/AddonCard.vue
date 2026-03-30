@@ -58,7 +58,7 @@ const statusText = computed(() => {
 <template>
   <article class="addon-card panel panel--soft">
     <div class="addon-card__identity">
-      <div class="addon-card__avatar">{{ initials(addon.name || addon.repositoryUrl || "GM") }}</div>
+      <div class="addon-card__avatar">{{ initials(addon.name || addon.sourceUrl || addon.url || "GM") }}</div>
       <div class="addon-card__copy">
         <h3>{{ addon.name || t("common.notSpecified") }}</h3>
         <p>{{ subtitle }}</p>

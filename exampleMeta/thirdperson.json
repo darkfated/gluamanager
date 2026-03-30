@@ -1,0 +1,11 @@
+{
+  "info": {
+    "name": "thirdperson",
+    "description": "Thirdperson for Gmod with position setting",
+    "author": "darkfated"
+  },
+  "version": "1.0.0",
+  "url": "https://github.com/darkfated/thirdperson/archive/refs/tags/v1.0.0.zip",
+  "dependencies": [],
+  "preserve": []
+}

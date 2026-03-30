@@ -1,14 +1,5 @@
 [
-  {
-    "url": "darkfated/mantle",
-    "branch": "master"
-  },
-  {
-    "url": "darkfated/newspawnmenu",
-    "branch": "master"
-  },
-  {
-    "url": "darkfated/thirdperson",
-    "branch": "master"
-  }
+  "https://raw.githubusercontent.com/darkfated/gluamanager/master/exampleMeta/mantle.json",
+  "https://raw.githubusercontent.com/darkfated/gluamanager/master/exampleMeta/newspawnmenu.json",
+  "https://raw.githubusercontent.com/darkfated/gluamanager/master/exampleMeta/thirdperson.json"
 ]

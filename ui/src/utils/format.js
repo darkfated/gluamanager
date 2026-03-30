@@ -26,17 +26,27 @@ export function normalizeError(error, locale) {
   return t(locale, "status.genericError");
 }
 
-export function repositoryHref(repositoryUrl) {
-  if (!repositoryUrl) {
+export function externalHref(url) {
+  if (!url) {
     return "";
   }
-  if (/^https?:\/\//i.test(repositoryUrl)) {
-    return repositoryUrl;
-  }
-  if (/^[\w.-]+\/[\w.-]+$/.test(repositoryUrl)) {
-    return `https://github.com/${repositoryUrl}`;
+  if (/^https?:\/\//i.test(url)) {
+    return url;
   }
   return "";
+}
+
+export function isHttpUrl(url) {
+  if (!url) {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
 export function initials(value) {

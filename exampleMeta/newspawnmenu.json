@@ -1,0 +1,13 @@
+{
+  "info": {
+    "name": "The New SpawnMenu",
+    "description": "A completely new spawnmenu for the sandbox",
+    "author": "darkfated"
+  },
+  "version": "1.0.0",
+  "url": "https://github.com/darkfated/newspawnmenu/archive/refs/tags/v1.0.0.zip",
+  "dependencies": [
+    "https://raw.githubusercontent.com/darkfated/gluamanager/master/exampleMeta/mantle.json"
+  ],
+  "preserve": []
+}

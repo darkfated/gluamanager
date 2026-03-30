@@ -2,6 +2,7 @@ use std::fs;
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
+use url::Url;
 
 use crate::error::{AppError, AppResult};
 
@@ -9,39 +10,48 @@ pub const MANIFEST_NAME: &str = ".addon";
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Manifest {
-    pub name: String,
-    pub description: String,
-    pub author: String,
+    pub info: Info,
     pub version: String,
-    pub github: GithubSource,
-    pub preserve: Vec<String>,
-    pub dependencies: Vec<GithubSource>,
-}
-
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct GithubSource {
-    #[serde(default)]
     pub url: String,
     #[serde(default)]
-    pub branch: String,
+    pub preserve: Vec<String>,
+    #[serde(default)]
+    pub dependencies: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Info {
+    #[serde(default)]
+    pub name: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default)]
+    pub author: String,
 }
 
 #[derive(Debug, Deserialize)]
 struct RawManifest {
+    #[serde(default)]
+    info: RawInfo,
+    #[serde(default)]
+    version: String,
+    url: String,
+    #[serde(default)]
+    preserve: Vec<String>,
+    #[serde(default)]
+    dependencies: Vec<String>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct RawInfo {
     #[serde(default)]
     name: String,
     #[serde(default)]
     description: String,
     #[serde(default)]
     author: String,
-    #[serde(default)]
-    version: String,
-    #[serde(default)]
-    github: GithubSource,
-    #[serde(default)]
-    preserve: Vec<String>,
-    #[serde(default)]
-    dependencies: Vec<GithubSource>,
 }
 
 impl Manifest {
@@ -50,21 +60,23 @@ impl Manifest {
         Self::load_from_str(&content)
     }
 
-    pub fn load_from_slice(content: &[u8]) -> AppResult<Self> {
-        Self::from_raw(serde_json::from_slice::<RawManifest>(content)?)
-    }
-
     pub fn load_from_str(content: &str) -> AppResult<Self> {
         Self::from_raw(serde_json::from_str::<RawManifest>(content)?)
     }
 
+    pub fn load_from_url(content: &[u8]) -> AppResult<Self> {
+        Self::from_raw(serde_json::from_slice::<RawManifest>(content)?)
+    }
+
     fn from_raw(raw: RawManifest) -> AppResult<Self> {
         let manifest = Self {
-            name: raw.name,
-            description: raw.description,
-            author: raw.author,
+            info: Info {
+                name: raw.info.name,
+                description: raw.info.description,
+                author: raw.info.author,
+            },
             version: raw.version,
-            github: raw.github,
+            url: raw.url,
             preserve: raw.preserve,
             dependencies: raw.dependencies,
         };
@@ -73,33 +85,36 @@ impl Manifest {
     }
 
     pub fn validate(&self) -> AppResult<()> {
-        if !self.github.url.trim().is_empty() {
-            parse_github_url(&self.github.url)?;
+        if self.info.name.trim().is_empty() {
+            return Err(AppError::Unexpected(
+                "Manifest is missing info.name.".into(),
+            ));
+        }
+
+        validate_url(&self.url, "url")?;
+
+        for dependency in &self.dependencies {
+            validate_url(dependency, "dependency")?;
         }
 
         Ok(())
     }
 }
 
-pub fn parse_github_url(raw: &str) -> AppResult<(String, String)> {
-    let value = raw.trim();
-    let parts = value
-        .split('/')
-        .filter(|segment| !segment.is_empty())
-        .collect::<Vec<_>>();
-    if parts.len() != 2 {
-        return Err(AppError::InvalidGithubUrl(
-            "github.url must be in the format username/repo.".into(),
-        ));
-    }
-    if value.contains("://") || value.starts_with("github.com/") {
-        return Err(AppError::InvalidGithubUrl(
-            "github.url must be in the format username/repo.".into(),
-        ));
+fn validate_url(value: &str, field: &str) -> AppResult<()> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return Err(AppError::Unexpected(format!(
+            "Manifest is missing {field}."
+        )));
     }
 
-    Ok((
-        parts[0].to_string(),
-        parts[1].trim_end_matches(".git").to_string(),
-    ))
+    let parsed = Url::parse(trimmed)
+        .map_err(|error| AppError::Unexpected(format!("Invalid {field} URL: {error}")))?;
+    match parsed.scheme() {
+        "http" | "https" => Ok(()),
+        _ => Err(AppError::Unexpected(format!(
+            "Invalid {field} URL: only http and https schemes are supported."
+        ))),
+    }
 }
