@@ -97,6 +97,17 @@ If you want a working example, look at the `exampleMeta/` folder. It contains sa
 
 Source indexes and metadata files can live anywhere that serves valid JSON over `http` or `https`.
 
+## 📸 Screenshots
+
+### Home
+<img width="1350" height="897" alt="Screenshot_2026-03-31_02-36-35" src="https://github.com/user-attachments/assets/8b42baf5-6c0d-42b8-91ed-fdbe137ba424" />
+
+### Addon panel
+<img width="1350" height="897" alt="Screenshot_2026-03-31_02-36-45" src="https://github.com/user-attachments/assets/3c105423-acfb-4357-8d21-908b098695d5" />
+
+### Settings
+<img width="1350" height="897" alt="Screenshot_2026-03-31_02-36-28" src="https://github.com/user-attachments/assets/7bf9ed10-b1f9-48a9-967b-2049c5a18e48" />
+
 ## ⚙️ Installation and updates
 
 Everything starts with the addon metadata file.
