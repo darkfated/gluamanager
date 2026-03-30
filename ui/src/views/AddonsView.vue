@@ -290,8 +290,9 @@ function openSettingsForSources() {
 
 .desktop-pane__header h2 {
   margin: 0;
-  font-size: 0.96rem;
+  font-size: 0.9rem;
   font-weight: 600;
+  line-height: 1.25;
 }
 
 .desktop-pane__body {

@@ -115,15 +115,16 @@ const store = useAppStore();
 }
 
 .settings-panel__header h2 {
-  font-size: 0.96rem;
+  font-size: 0.9rem;
   font-weight: 600;
+  line-height: 1.25;
 }
 
 .settings-stat span,
 .settings-select span {
   color: var(--muted);
   overflow-wrap: anywhere;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
 }
 
 .settings-stats {
@@ -141,7 +142,7 @@ const store = useAppStore();
 }
 
 .settings-stat strong {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   line-height: 1.3;
   overflow-wrap: anywhere;
   font-weight: 600;

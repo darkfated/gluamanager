@@ -96,13 +96,15 @@ const filteredSources = computed(() => {
 }
 
 .sources__header h2 {
-  font-size: 0.96rem;
+  font-size: 0.9rem;
   font-weight: 600;
+  line-height: 1.25;
 }
 
 .sources__header p {
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
+  line-height: 1.35;
 }
 
 .sources__toolbar {
@@ -115,7 +117,8 @@ const filteredSources = computed(() => {
 .sources__status {
   margin: 0;
   color: var(--muted);
-  font-size: 0.88rem;
+  font-size: 0.8rem;
+  line-height: 1.35;
 }
 
 .sources__panel {

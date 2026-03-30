@@ -22,7 +22,9 @@ defineProps({
 }
 
 .empty strong {
-  font-size: 1.2rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.25;
 }
 
 .empty p {
@@ -30,5 +32,7 @@ defineProps({
   max-width: 30rem;
   color: var(--muted);
   overflow-wrap: anywhere;
+  font-size: 0.82rem;
+  line-height: 1.35;
 }
 </style>
