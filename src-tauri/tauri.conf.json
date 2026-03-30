@@ -4,7 +4,10 @@
   "version": "0.2.0",
   "identifier": "com.darkf.gluamanager",
   "build": {
-    "frontendDist": "../ui"
+    "beforeDevCommand": "npm run dev --prefix ui",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build --prefix ui",
+    "frontendDist": "../ui/dist"
   },
   "app": {
     "withGlobalTauri": true,

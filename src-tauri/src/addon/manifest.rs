@@ -87,7 +87,10 @@ impl Manifest {
 
 pub fn parse_github_url(raw: &str) -> AppResult<(String, String)> {
     let value = raw.trim();
-    let parts = value.split('/').filter(|segment| !segment.is_empty()).collect::<Vec<_>>();
+    let parts = value
+        .split('/')
+        .filter(|segment| !segment.is_empty())
+        .collect::<Vec<_>>();
     if parts.len() != 2 {
         return Err(AppError::InvalidGithubUrl(
             "Поле github.url должно быть в формате username/repo.".into(),

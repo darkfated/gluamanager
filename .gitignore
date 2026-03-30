@@ -4,3 +4,5 @@ src-tauri/target/
 .DS_Store
 Thumbs.db
 .cargo-target-check/
+ui/node_modules/
+ui/dist/

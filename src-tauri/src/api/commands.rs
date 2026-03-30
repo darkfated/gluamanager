@@ -22,7 +22,9 @@ async fn install_app_update(app: AppHandle) -> Result<bool, String> {
 
 #[tauri::command]
 async fn open_external_url(app: AppHandle, url: String) -> Result<(), String> {
-    app.opener().open_url(url, None::<&str>).map_err(|error| error.to_string())
+    app.opener()
+        .open_url(url, None::<&str>)
+        .map_err(|error| error.to_string())
 }
 
 #[tauri::command]
@@ -88,6 +90,11 @@ async fn rollback_addon(addon_path: String) -> Result<AddonView, String> {
 }
 
 #[tauri::command]
+async fn remove_addon(addon_path: String) -> Result<(), String> {
+    handle(update::remove_addon(&PathBuf::from(addon_path)).await)
+}
+
+#[tauri::command]
 async fn list_available_addons(
     root_path: String,
     source_urls: Vec<String>,
@@ -133,6 +140,7 @@ pub fn register() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool {
         load_available_addon_readme,
         update_addon,
         rollback_addon,
+        remove_addon,
         list_available_addons,
         install_addon,
         preview_install

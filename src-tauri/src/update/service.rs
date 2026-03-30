@@ -31,6 +31,8 @@ struct ResolvedInstallPlan {
 const GITHUB_CONCURRENCY_LIMIT: usize = 6;
 const BACKUP_ROOT_DIR: &str = ".gluamanager-backups";
 const LAST_UPDATE_BACKUP_DIR: &str = "last-update";
+const STATUS_ACTUAL: &str = "Actual";
+const STATUS_UPDATE_AVAILABLE: &str = "Update available";
 
 pub async fn scan_root(root: &Path) -> AppResult<Vec<AddonView>> {
     let addons = discover_root(root)?;
@@ -159,7 +161,7 @@ pub async fn update_addon(addon_path: &Path) -> AppResult<AddonView> {
             Some(remote.manifest.version.clone()),
             false,
             false,
-            "Actual",
+            STATUS_ACTUAL,
         ));
     }
 
@@ -186,7 +188,7 @@ pub async fn update_addon(addon_path: &Path) -> AppResult<AddonView> {
         Some(remote.manifest.version.clone()),
         false,
         false,
-        "Actual",
+        STATUS_ACTUAL,
     ))
 }
 
@@ -200,6 +202,33 @@ pub async fn rollback_addon(addon_path: &Path) -> AppResult<AddonView> {
 
     restore_addon_from_backup(addon_path, &backup_path)?;
     check_addon(addon_path).await
+}
+
+pub async fn remove_addon(addon_path: &Path) -> AppResult<()> {
+    let manifest_path = addon_path.join(MANIFEST_NAME);
+    if !manifest_path.exists() {
+        return Err(AppError::Unexpected(format!(
+            "Addon manifest was not found: {}",
+            manifest_path.display()
+        )));
+    }
+    if !addon_path.exists() || !addon_path.is_dir() {
+        return Err(AppError::Unexpected(format!(
+            "Addon folder does not exist: {}",
+            addon_path.display()
+        )));
+    }
+
+    if let Ok(backup_path) = last_update_backup_path(addon_path) {
+        if let Some(backup_root) = backup_path.parent() {
+            if backup_root.exists() {
+                let _ = fs::remove_dir_all(backup_root);
+            }
+        }
+    }
+
+    fs::remove_dir_all(addon_path)?;
+    Ok(())
 }
 
 pub async fn list_available_addons(
@@ -288,9 +317,9 @@ async fn check_discovered_addon(addon: DiscoveredAddon) -> AddonView {
                 has_update,
                 false,
                 if has_update {
-                    "Update available"
+                    STATUS_UPDATE_AVAILABLE
                 } else {
-                    "Actual"
+                    STATUS_ACTUAL
                 },
             )
         }
@@ -597,8 +626,7 @@ fn create_update_backup(addon_path: &Path) -> AppResult<PathBuf> {
     if backup_path.exists() {
         fs::remove_dir_all(&backup_path)?;
     }
-    fs::create_dir_all(&backup_path)?;
-    copy_dir_contents(addon_path, &backup_path)?;
+    copy_dir_recursive(addon_path, &backup_path)?;
     Ok(backup_path)
 }
 
@@ -606,7 +634,7 @@ fn restore_addon_from_backup(addon_path: &Path, backup_path: &Path) -> AppResult
     validate_root(addon_path)?;
     validate_root(backup_path)?;
     clear_directory(addon_path)?;
-    copy_dir_contents(backup_path, addon_path)?;
+    copy_dir_recursive(backup_path, addon_path)?;
     Ok(())
 }
 
@@ -628,31 +656,6 @@ fn last_update_backup_path(addon_path: &Path) -> AppResult<PathBuf> {
         .join(BACKUP_ROOT_DIR)
         .join(addon_name)
         .join(LAST_UPDATE_BACKUP_DIR))
-}
-
-fn copy_dir_contents(from: &Path, to: &Path) -> AppResult<()> {
-    fs::create_dir_all(to)?;
-
-    for entry in fs::read_dir(from)? {
-        let entry = entry?;
-        let source_path = entry.path();
-        let target_path = to.join(entry.file_name());
-        let file_type = entry.file_type()?;
-
-        if file_type.is_dir() {
-            copy_dir_recursive(&source_path, &target_path)?;
-            continue;
-        }
-
-        if file_type.is_file() {
-            if let Some(parent) = target_path.parent() {
-                fs::create_dir_all(parent)?;
-            }
-            fs::copy(&source_path, &target_path)?;
-        }
-    }
-
-    Ok(())
 }
 
 fn copy_dir_recursive(from: &Path, to: &Path) -> AppResult<()> {

@@ -144,6 +144,13 @@ You also need `tauri-cli`:
 cargo install tauri-cli
 ```
 
+Install frontend dependencies:
+
+```bash
+cd ui
+npm install
+```
+
 ## Running
 
 Development:
