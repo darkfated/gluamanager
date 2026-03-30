@@ -93,12 +93,12 @@ pub fn parse_github_url(raw: &str) -> AppResult<(String, String)> {
         .collect::<Vec<_>>();
     if parts.len() != 2 {
         return Err(AppError::InvalidGithubUrl(
-            "Поле github.url должно быть в формате username/repo.".into(),
+            "github.url must be in the format username/repo.".into(),
         ));
     }
     if value.contains("://") || value.starts_with("github.com/") {
         return Err(AppError::InvalidGithubUrl(
-            "Поле github.url должно быть в формате username/repo.".into(),
+            "github.url must be in the format username/repo.".into(),
         ));
     }
 

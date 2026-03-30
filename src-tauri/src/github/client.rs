@@ -52,13 +52,11 @@ fn default_headers() -> HeaderMap {
 
 pub fn resolve_repo(manifest: &Manifest) -> AppResult<RepoRef> {
     if manifest.github.url.trim().is_empty() {
-        return Err(AppError::Unexpected(
-            "В .addon не заполнено поле github.url.".into(),
-        ));
+        return Err(AppError::Unexpected(".addon is missing github.url.".into()));
     }
     if manifest.github.branch.trim().is_empty() {
         return Err(AppError::Unexpected(
-            "В .addon не заполнено поле github.branch.".into(),
+            ".addon is missing github.branch.".into(),
         ));
     }
 
@@ -75,7 +73,7 @@ pub async fn load_source_repositories(source_url: &str) -> AppResult<Vec<RepoRef
 
     if !response.status().is_success() {
         return Err(AppError::Unexpected(format!(
-            "Не удалось получить источник {}. HTTP {}.",
+            "Failed to load source {}. HTTP {}.",
             source_url,
             response.status()
         )));
@@ -125,7 +123,10 @@ pub async fn download_repository_archive(remote: &RemoteManifest) -> AppResult<V
     let response = client().get(url).send().await?;
     ensure_success(
         response.status(),
-        format!("Не удалось скачать архив ветки {}.", remote.repo.branch),
+        format!(
+            "Failed to download archive for branch {}.",
+            remote.repo.branch
+        ),
     )?;
 
     Ok(response.bytes().await?.to_vec())
@@ -136,7 +137,7 @@ fn resolve_repo_from_url(repository_url: &str, branch: &str) -> AppResult<RepoRe
     let branch = branch.trim().to_string();
     if branch.is_empty() {
         return Err(AppError::Unexpected(format!(
-            "Для репозитория {} не указана ветка.",
+            "No branch specified for repository {}.",
             repository_url
         )));
     }
@@ -158,14 +159,12 @@ fn resolve_source_repository(entry: SourceRepository) -> AppResult<RepoRef> {
     };
 
     if github.url.trim().is_empty() {
-        return Err(AppError::Unexpected(
-            "В источнике не заполнено поле url.".into(),
-        ));
+        return Err(AppError::Unexpected("Source entry is missing url.".into()));
     }
 
     if github.branch.trim().is_empty() {
         return Err(AppError::Unexpected(format!(
-            "Для репозитория {} в источнике не заполнено поле branch.",
+            "Source entry is missing branch for repository {}.",
             github.url
         )));
     }
@@ -204,10 +203,7 @@ async fn fetch_manifest_bytes(repo: &RepoRef) -> AppResult<Vec<u8>> {
     let response = client().get(url).send().await?;
     ensure_success(
         response.status(),
-        format!(
-            "Не удалось получить удалённый .addon по ветке {}.",
-            repo.branch
-        ),
+        format!("Failed to fetch remote .addon for branch {}.", repo.branch),
     )?;
 
     Ok(response.bytes().await?.to_vec())
@@ -226,7 +222,7 @@ async fn fetch_readme_by_repo(repo: &RepoRef) -> AppResult<Option<String>> {
 
     ensure_success(
         response.status(),
-        format!("Не удалось получить README.md по ветке {}.", repo.branch),
+        format!("Failed to fetch README.md for branch {}.", repo.branch),
     )?;
 
     let bytes = response.bytes().await?;
@@ -240,7 +236,7 @@ fn ensure_success(status: reqwest::StatusCode, context: String) -> AppResult<()>
     }
 
     Err(AppError::Unexpected(format!(
-        "{context} GitHub вернул {}.",
+        "{context} GitHub returned {}.",
         status
     )))
 }

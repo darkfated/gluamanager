@@ -67,9 +67,7 @@ pub fn save_sources(app: &AppHandle, sources: &[String]) -> AppResult<AppSetting
 
 fn settings_path(app: &AppHandle) -> AppResult<PathBuf> {
     let dir = app.path().app_config_dir().map_err(|error| {
-        AppError::Unexpected(format!(
-            "Не удалось определить директорию настроек: {error}"
-        ))
+        AppError::Unexpected(format!("Failed to determine settings directory: {error}"))
     })?;
     Ok(dir.join(SETTINGS_FILE_NAME))
 }

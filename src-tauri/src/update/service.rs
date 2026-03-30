@@ -38,7 +38,7 @@ pub async fn scan_root(root: &Path) -> AppResult<Vec<AddonView>> {
     let addons = discover_root(root)?;
     Ok(addons
         .into_iter()
-        .map(|addon| addon_view(&addon, None, false, false, "Найден"))
+        .map(|addon| addon_view(&addon, None, false, false, "Found"))
         .collect())
 }
 
