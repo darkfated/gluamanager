@@ -1,8 +1,20 @@
 <script setup>
+import { ref } from "vue";
+
+import AddonMetadataModal from "../components/AddonMetadataModal.vue";
 import SourceList from "../components/SourceList.vue";
 import { useAppStore } from "../composables/useAppStore.js";
 
 const store = useAppStore();
+const metadataOpen = ref(false);
+
+function openMetadataBuilder() {
+  metadataOpen.value = true;
+}
+
+function closeMetadataBuilder() {
+  metadataOpen.value = false;
+}
 </script>
 
 <template>
@@ -59,6 +71,20 @@ const store = useAppStore();
           </select>
         </label>
       </section>
+
+      <section class="settings-panel panel">
+        <header class="settings-panel__header">
+          <h2>{{ store.t("settings.metadataTitle") }}</h2>
+        </header>
+
+        <button
+          class="button button--primary settings-panel__button settings-panel__button--full settings-panel__button--field"
+          type="button"
+          @click="openMetadataBuilder"
+        >
+          {{ store.t("settings.metadataButton") }}
+        </button>
+      </section>
     </div>
 
     <SourceList
@@ -73,6 +99,8 @@ const store = useAppStore();
       @add="store.addSource"
       @remove="store.removeSource"
     />
+
+    <AddonMetadataModal :open="metadataOpen" :t="store.t" @close="closeMetadataBuilder" />
   </div>
 </template>
 
@@ -93,18 +121,19 @@ const store = useAppStore();
 }
 
 .settings-top {
-  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
-  align-items: start;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
 }
 
 .settings-panel {
   display: grid;
-  gap: 0.75rem;
-  align-content: stretch;
-  grid-auto-rows: min-content;
+  gap: 0.5rem;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  align-content: start;
   min-width: 0;
   overflow: hidden;
-  padding: 0.8rem;
+  padding: 0.75rem;
+  min-height: 0;
   height: 100%;
 }
 
@@ -129,14 +158,15 @@ const store = useAppStore();
 
 .settings-stats {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
 }
 
 .settings-stat {
   min-height: 0;
   display: grid;
-  gap: 0.35rem;
+  gap: 0.3rem;
   align-content: start;
-  padding: 0.75rem 0.8rem;
+  padding: 0.55rem 0.65rem;
   overflow: hidden;
   border-radius: 0.8rem;
 }
@@ -150,13 +180,33 @@ const store = useAppStore();
 
 .settings-panel__button {
   justify-self: start;
+  min-height: 2rem;
+  padding: 0.38rem 0.72rem;
+  margin-top: auto;
+}
+
+.settings-panel__button--full {
+  justify-self: stretch;
+}
+
+.settings-panel__button--field {
+  width: 100%;
+  min-height: 3.15rem;
+  padding: 0.55rem 0.65rem;
+  margin: 0.1rem 0;
 }
 
 .settings-select {
   display: grid;
-  padding: 0.75rem 0.8rem;
+  padding: 0.55rem 0.65rem;
   border-radius: 0.8rem;
   align-self: start;
+  min-height: 0;
+  height: 100%;
+}
+
+.settings-select .select {
+  min-height: 2rem;
 }
 
 .settings-select .select {
@@ -172,6 +222,12 @@ const store = useAppStore();
     calc(100% - 12px) calc(50% - 3px);
   background-size: 6px 6px, 6px 6px;
   background-repeat: no-repeat;
+}
+
+@media (max-width: 1180px) {
+  .settings-top {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 980px) {
