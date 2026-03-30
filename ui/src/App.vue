@@ -27,7 +27,13 @@ onUnmounted(() => {
     <div class="desktop-shell panel">
       <header class="desktop-header">
         <div class="desktop-titlebar__brand">
-          <strong>{{ store.t("common.appName") }}</strong>
+          <button
+            class="desktop-brand-button"
+            type="button"
+            @click="store.openExternalUrl('https://github.com/darkfated/gluamanager')"
+          >
+            {{ store.t("common.appName") }}
+          </button>
         </div>
         <nav class="desktop-tabs">
           <RouterLink to="/addons" class="desktop-tab">
@@ -105,10 +111,23 @@ onUnmounted(() => {
   min-width: 0;
 }
 
-.desktop-titlebar__brand strong {
+.desktop-brand-button {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
   line-height: 1.1;
   font-size: 0.95rem;
   font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.desktop-brand-button:hover {
+  color: #ffffff;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
 }
 
 .desktop-titlebar__meta {
