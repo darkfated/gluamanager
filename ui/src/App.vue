@@ -44,7 +44,7 @@ onUnmounted(() => {
           </RouterLink>
         </nav>
         <div class="desktop-titlebar__meta">
-          {{ store.state.appVersion || "v0.2.0" }}
+          {{ store.state.appVersion }}
         </div>
       </header>
 
