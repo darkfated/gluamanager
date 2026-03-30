@@ -72,7 +72,10 @@ fn settings_path(app: &AppHandle) -> AppResult<PathBuf> {
 }
 
 fn default_sources() -> Vec<String> {
-    Vec::new()
+    vec![
+        "https://raw.githubusercontent.com/darkfated/gluamanager/refs/heads/master/default_source.json"
+            .to_string(),
+    ]
 }
 
 fn normalize_settings(settings: AppSettings) -> AppSettings {
