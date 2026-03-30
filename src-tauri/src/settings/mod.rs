@@ -8,6 +8,7 @@ use url::Url;
 use crate::error::{AppError, AppResult};
 
 const SETTINGS_FILE_NAME: &str = "settings.json";
+const APP_IDENTIFIER: &str = "com.darkf.gluamanager";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -64,6 +65,24 @@ pub fn save_sources(app: &AppHandle, sources: &[String]) -> AppResult<AppSetting
     Ok(settings)
 }
 
+pub fn load_cli() -> AppResult<AppSettings> {
+    let path = cli_settings_path()?;
+    if !path.exists() {
+        return Ok(AppSettings::default());
+    }
+
+    let content = fs::read_to_string(path)?;
+    let settings: AppSettings = serde_json::from_str(&content)?;
+    Ok(normalize_settings(settings))
+}
+
+pub fn default_sources() -> Vec<String> {
+    vec![
+        "https://raw.githubusercontent.com/darkfated/gluamanager/refs/heads/master/default_source.json"
+            .to_string(),
+    ]
+}
+
 fn settings_path(app: &AppHandle) -> AppResult<PathBuf> {
     let dir = app.path().app_config_dir().map_err(|error| {
         AppError::Unexpected(format!("Failed to determine settings directory: {error}"))
@@ -71,11 +90,27 @@ fn settings_path(app: &AppHandle) -> AppResult<PathBuf> {
     Ok(dir.join(SETTINGS_FILE_NAME))
 }
 
-fn default_sources() -> Vec<String> {
-    vec![
-        "https://raw.githubusercontent.com/darkfated/gluamanager/refs/heads/master/default_source.json"
-            .to_string(),
-    ]
+fn cli_settings_path() -> AppResult<PathBuf> {
+    Ok(cli_config_dir()?.join(SETTINGS_FILE_NAME))
+}
+
+fn cli_config_dir() -> AppResult<PathBuf> {
+    let base = match std::env::consts::OS {
+        "windows" => std::env::var_os("APPDATA")
+            .map(PathBuf::from)
+            .or_else(|| std::env::var_os("USERPROFILE").map(PathBuf::from)),
+        "macos" => std::env::var_os("HOME")
+            .map(PathBuf::from)
+            .map(|home| home.join("Library").join("Application Support")),
+        _ => std::env::var_os("XDG_CONFIG_HOME")
+            .map(PathBuf::from)
+            .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".config"))),
+    }
+    .ok_or_else(|| {
+        AppError::Unexpected("Failed to determine the CLI configuration directory.".into())
+    })?;
+
+    Ok(base.join(APP_IDENTIFIER))
 }
 
 fn normalize_settings(settings: AppSettings) -> AppSettings {

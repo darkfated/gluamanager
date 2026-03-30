@@ -1,12 +1,13 @@
 mod addon;
 mod api;
 mod app;
+pub mod cli;
 mod error;
 mod github;
 mod settings;
 mod update;
 
-pub fn run() {
+pub fn run_gui() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())

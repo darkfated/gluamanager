@@ -4,41 +4,39 @@ Desktop addon manager for Garry's Mod.
 
 Language: [🇺🇸 English](./README.md) | [🇷🇺 Русский](./README_RU.md)
 
-GLuaManager keeps a Garry's Mod workspace organized. It scans installed addons, checks remote metadata, shows updates, and installs addons from metadata URLs or source indexes.
+GLuaManager helps keep a Garry's Mod addon folder tidy. It can scan what is already installed, show what is available, install new addons, and keep track of updates.
 
 ## 🔥 How it works
 
-There are two ways to add addons: source indexes in Settings and a direct metadata URL on the main tab.
+There are two ways to bring addons into GLuaManager: saved source indexes and a direct metadata link.
 
 ### 🔗 Data flow
 
 The flow is simple:
 
-- a **source** is a JSON index in Settings
-- each source lists addon metadata URLs
-- each metadata file contains addon `info` and a direct archive `url`
-- the archive is what gets downloaded and installed
+- a **source** is a JSON list of addon metadata links
+- each metadata file contains addon details and a direct archive link
+- the archive is what gets downloaded and unpacked
 
-If you already have one addon metadata URL, use **Add addon** on the main tab.
+If you already know one addon link, you can install it directly.
 
 ### 📦 Installed addons
 
-- choose your Garry's Mod addons folder
-- the app scans folders that contain a `.addon` manifest
-- each installed addon keeps its local metadata
-- the app stores the metadata URL beside the addon
-- update checks reload that URL and compare versions
-- if versions differ, the addon is marked as updateable
+- choose your Garry's Mod `addons` folder
+- the app looks only at immediate subfolders that contain a `.addon` file
+- each installed addon keeps its own local metadata
+- the app stores the metadata link beside the addon
+- update checks reload that link and compare versions
+- if versions differ, the addon is marked as ready to update
 - update downloads the archive from `url` and applies it to the local folder
 
 ### 🌐 Remote catalog
 
-- add one or more source index URLs in Settings
-- each source index points to addon metadata URLs
-- the app loads those metadata files and builds the remote catalog
-- use **Add addon** on the main tab for a single metadata URL
-- opening an addon shows its metadata, download URL, dependencies, and local README if it exists
-- install first resolves dependencies and then downloads what is needed
+- add one or more source indexes in Settings
+- each source points to addon metadata links
+- the app loads those files and builds the addon catalog
+- opening an addon shows its details, download link, dependencies, and local README if it exists
+- install first shows the dependency tree and then downloads what you choose
 
 > [!NOTE]
 > GLuaManager is not a package manager. Garry's Mod addons share one filesystem namespace, so the app focuses on visibility, dependency warnings, and controlled installation.
@@ -101,14 +99,45 @@ Source indexes and metadata files can live anywhere that serves valid JSON over 
 
 ## ⚙️ Installation and updates
 
-Installation and updates use the same metadata file.
+Everything starts with the addon metadata file.
 
-- install: resolve dependencies, show the plan, then download the archive from `url`
-- update: reload metadata from the saved URL and compare `version`
-- match: the addon is up to date
-- mismatch: the addon can be updated
+Install an addon, and you get a clear dependency tree first. You choose what to keep, and only the selected parts are downloaded.
+Update an addon, and it checks the current version before offering the newer one.
 
-After installation, GLuaManager stores the metadata URL next to the addon so future checks stay tied to the same entry.
+After that, the metadata link stays next to the addon, so future checks always point to the same place.
+
+## 💻 CLI
+
+GLuaManager can also be used from the terminal with the same `gluamanager` command.
+
+- if you are already inside your `addons` folder, that folder becomes the working folder automatically
+- `scan` shows the addons already sitting in that folder
+- `available` shows addons from the sources you saved in the app, including a short `id`
+- `install` accepts either a direct URL or an `addonId`
+- `show` opens a clean addon card with the main details
+- `update` checks the addon and offers the newer version if it exists
+- `rollback` brings back the last saved version
+- `remove` deletes an addon after confirmation
+- Linux packages add a `gluamanager` command in `/usr/local/bin`
+- Windows installers add the app folder to `PATH`
+
+Typical commands:
+
+```bash
+gluamanager scan
+gluamanager available
+gluamanager install test-addon
+gluamanager install https://example.com/test-addon.json
+gluamanager show my-addon
+gluamanager update my-addon
+gluamanager rollback my-addon
+gluamanager remove my-addon
+gluamanager --json scan
+```
+
+Put `--json` before the command when you want machine-friendly output.
+
+Use `gluamanager --help` or `gluamanager <command> --help` to see the full command list and the command-specific help.
 
 ## 🛠️ Build requirements
 

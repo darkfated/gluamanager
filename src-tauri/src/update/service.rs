@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::fs;
+use std::hash::{Hash, Hasher};
 use std::io::{Cursor, Read, Write};
 use std::path::{Component, Path, PathBuf};
 use std::sync::Arc;
@@ -63,15 +64,36 @@ pub async fn check_updates(root: &Path) -> AppResult<Vec<AddonView>> {
 }
 
 pub async fn check_addon(addon_path: &Path) -> AppResult<AddonView> {
+    inspect_addon(addon_path).await
+}
+
+pub async fn inspect_addon(addon_path: &Path) -> AppResult<AddonView> {
     let manifest_path = addon_path.join(MANIFEST_NAME);
     let manifest = Manifest::load(&manifest_path)?;
-    let addon = DiscoveredAddon {
-        manifest,
-        addon_path: addon_path.to_path_buf(),
-        source_url: load_source_url(addon_path)?,
-    };
+    let source_url = load_source_url(addon_path)?;
 
-    Ok(check_discovered_addon(addon).await)
+    match source_url {
+        Some(source_url) => {
+            let addon = DiscoveredAddon {
+                manifest,
+                addon_path: addon_path.to_path_buf(),
+                source_url: Some(source_url),
+            };
+
+            Ok(check_discovered_addon(addon).await)
+        }
+        None => Ok(addon_view(
+            &DiscoveredAddon {
+                manifest,
+                addon_path: addon_path.to_path_buf(),
+                source_url: None,
+            },
+            None,
+            false,
+            false,
+            "Local addon",
+        )),
+    }
 }
 
 pub async fn load_addon_readme(addon_path: &Path) -> AppResult<Option<ReadmeView>> {
@@ -96,6 +118,7 @@ pub async fn load_available_addon(root: &Path, source_url: &str) -> AppResult<Av
         &remote,
         Some(source_url.to_string()),
         installed,
+        addon_id(&remote, source_url),
     ))
 }
 
@@ -177,7 +200,7 @@ pub async fn rollback_addon(addon_path: &Path) -> AppResult<AddonView> {
     }
 
     restore_addon_from_backup(addon_path, &backup_path)?;
-    check_addon(addon_path).await
+    inspect_addon(addon_path).await
 }
 
 pub async fn remove_addon(addon_path: &Path) -> AppResult<()> {
@@ -244,10 +267,12 @@ pub async fn list_available_addons(
                 Err(_) => return None,
             };
             let installed = installed_keys.contains(&source_key(&addon_url));
+            let id = addon_id(&remote, &addon_url);
             Some(AvailableAddonView::from_manifest(
                 &remote,
                 Some(addon_url),
                 installed,
+                id,
             ))
         }
     })
@@ -261,16 +286,37 @@ pub async fn list_available_addons(
 }
 
 pub async fn install_addon(root: &Path, source_url: &str) -> AppResult<AddonView> {
+    let plan = resolve_install_plan(root, source_url).await?;
+    let selected = plan
+        .targets
+        .iter()
+        .map(|remote| remote.source_url.clone())
+        .collect::<Vec<_>>();
+
+    install_addon_with_selection(root, source_url, &selected).await
+}
+
+pub async fn install_addon_with_selection(
+    root: &Path,
+    source_url: &str,
+    selected_source_urls: &[String],
+) -> AppResult<AddonView> {
     validate_root(root)?;
     let plan = resolve_install_plan(root, source_url).await?;
     let root_key = source_key(source_url);
+    let selected = selected_source_urls
+        .iter()
+        .map(|value| source_key(value))
+        .collect::<HashSet<_>>();
 
     for remote in &plan.targets {
-        install_remote(root, remote).await?;
+        if selected.contains(&source_key(&remote.source_url)) {
+            install_remote(root, remote).await?;
+        }
     }
 
     if let Some(installed_root) = find_installed_addon_by_source(root, &root_key)? {
-        return check_addon(&installed_root.addon_path).await;
+        return inspect_addon(&installed_root.addon_path).await;
     }
 
     Err(AppError::Unexpected(format!(
@@ -439,10 +485,6 @@ fn discover_root(root: &Path) -> AppResult<Vec<DiscoveredAddon>> {
     validate_root(root)?;
 
     let mut found = Vec::new();
-    if let Some(addon) = try_manifest(root)? {
-        found.push(addon);
-    }
-
     for entry in fs::read_dir(root)? {
         let entry = entry?;
         let path = entry.path();
@@ -591,6 +633,48 @@ fn merge_preserve(local: &[String], remote: &[String]) -> Vec<String> {
 
 fn source_key(source_url: &str) -> String {
     source_url.trim().to_lowercase()
+}
+
+fn addon_id(manifest: &Manifest, source_url: &str) -> String {
+    let preferred = manifest
+        .info
+        .name
+        .split_whitespace()
+        .map(|part| part.to_lowercase())
+        .collect::<Vec<_>>()
+        .join("-");
+    let preferred = preferred
+        .chars()
+        .filter(|ch| ch.is_ascii_alphanumeric() || *ch == '-')
+        .collect::<String>()
+        .trim_matches('-')
+        .to_string();
+
+    if !preferred.is_empty() {
+        return preferred;
+    }
+
+    if let Ok(url) = url::Url::parse(source_url) {
+        if let Some(last) = url
+            .path_segments()
+            .and_then(|segments| segments.filter(|segment| !segment.is_empty()).last())
+        {
+            let stem = last.split('.').next().unwrap_or(last).to_lowercase();
+            let stem = stem
+                .chars()
+                .filter(|ch| ch.is_ascii_alphanumeric() || *ch == '-')
+                .collect::<String>()
+                .trim_matches('-')
+                .to_string();
+            if !stem.is_empty() {
+                return stem;
+            }
+        }
+    }
+
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    source_key(source_url).hash(&mut hasher);
+    format!("addon-{:08x}", hasher.finish() as u32)
 }
 
 fn install_name(manifest: &Manifest, fallback: &str) -> String {

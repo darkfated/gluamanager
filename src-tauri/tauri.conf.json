@@ -3,6 +3,7 @@
   "productName": "GLuaManager",
   "version": "0.2.0",
   "identifier": "com.darkf.gluamanager",
+  "mainBinaryName": "gluamanager",
   "build": {
     "beforeDevCommand": "npm run dev --prefix ui",
     "devUrl": "http://localhost:1420",
@@ -33,7 +34,22 @@
     "active": true,
     "targets": "all",
     "icon": ["icons/128x128.png", "icons/512x512.png", "icons/icon.ico"],
-    "createUpdaterArtifacts": true
+    "createUpdaterArtifacts": true,
+    "linux": {
+      "deb": {
+        "postInstallScript": "./scripts/postinstall.sh",
+        "postRemoveScript": "./scripts/postremove.sh"
+      },
+      "rpm": {
+        "postInstallScript": "./scripts/postinstall.sh",
+        "postRemoveScript": "./scripts/postremove.sh"
+      }
+    },
+    "windows": {
+      "nsis": {
+        "installerHooks": "./windows/hooks.nsh"
+      }
+    }
   },
   "plugins": {
     "updater": {

@@ -17,3 +17,24 @@ pub enum AppError {
     #[error("{0}")]
     Unexpected(String),
 }
+
+impl AppError {
+    pub fn user_message(&self) -> String {
+        match self {
+            Self::Io(error) => match error.kind() {
+                std::io::ErrorKind::NotFound => "Not found.".into(),
+                std::io::ErrorKind::PermissionDenied => "No access to the file or folder.".into(),
+                std::io::ErrorKind::AlreadyExists => "That file or folder already exists.".into(),
+                std::io::ErrorKind::InvalidData => {
+                    "The file is damaged or has an invalid format.".into()
+                }
+                _ => format!("File error: {error}"),
+            },
+            Self::Json(_) => "The .addon file or settings are damaged.".into(),
+            Self::Http(_) => "Could not fetch data from the link.".into(),
+            Self::Zip(_) => "Could not unpack the archive.".into(),
+            Self::Updater(_) => "Could not check for updates.".into(),
+            Self::Unexpected(message) => message.clone(),
+        }
+    }
+}

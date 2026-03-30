@@ -24,6 +24,7 @@ pub struct AddonView {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AvailableAddonView {
+    pub id: String,
     pub name: String,
     pub description: String,
     pub author: String,
@@ -86,8 +87,14 @@ impl AddonView {
 }
 
 impl AvailableAddonView {
-    pub fn from_manifest(manifest: &Manifest, source_url: Option<String>, installed: bool) -> Self {
+    pub fn from_manifest(
+        manifest: &Manifest,
+        source_url: Option<String>,
+        installed: bool,
+        id: String,
+    ) -> Self {
         Self {
+            id,
             name: manifest.info.name.clone(),
             description: manifest.info.description.clone(),
             author: manifest.info.author.clone(),
