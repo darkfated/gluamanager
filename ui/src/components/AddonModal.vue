@@ -66,7 +66,7 @@ const canRollback = computed(
     !props.addon?.hasError,
 );
 const canInstall = computed(
-  () => !isInstalled.value && !props.addon?.installed && !props.busy,
+  () => !isInstalled.value && !props.addon?.installed && !props.busy && !props.installPlan,
 );
 const canRemove = computed(() => isInstalled.value && !props.busy && Boolean(props.addon?.addonPath));
 </script>
@@ -348,13 +348,13 @@ const canRemove = computed(() => isInstalled.value && !props.busy && Boolean(pro
 .modal-card__info-grid {
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  gap: 0.5rem;
+  gap: 0.75rem;
   min-height: 0;
 }
 
 .info-stack {
   display: grid;
-  gap: 0.5rem;
+  gap: 0.75rem;
   min-height: 0;
   min-width: 0;
 }
@@ -370,7 +370,7 @@ const canRemove = computed(() => isInstalled.value && !props.busy && Boolean(pro
   border-radius: 0.75rem;
   box-shadow: none;
   overflow: hidden;
-  padding: 0.7rem 0.75rem;
+  padding: 0.75rem 0.8rem;
 }
 
 .detail-row span,
@@ -385,7 +385,7 @@ const canRemove = computed(() => isInstalled.value && !props.busy && Boolean(pro
 .detail-panel p,
 .install-plan__item strong,
 .install-plan__item span {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   line-height: 1.3;
 }
 
@@ -409,11 +409,11 @@ const canRemove = computed(() => isInstalled.value && !props.busy && Boolean(pro
 }
 
 .detail-panel__description {
-  max-height: 8rem;
+  max-height: 7.5rem;
   overflow: auto;
   padding-right: 0.2rem;
-  font-size: 0.8rem;
-  line-height: 1.3;
+  font-size: 0.82rem;
+  line-height: 1.35;
 }
 
 .modal-card__body {
@@ -431,27 +431,27 @@ const canRemove = computed(() => isInstalled.value && !props.busy && Boolean(pro
 
 .install-plan {
   display: grid;
-  gap: 0.65rem;
-  padding: 0.72rem 0.75rem;
+  gap: 0.75rem;
+  padding: 0.75rem 0.8rem;
   border-radius: 0.8rem;
 }
 
 .install-plan__copy h4 {
-  margin: 0 0 0.25rem;
-  font-size: 0.88rem;
+  margin: 0 0 0.3rem;
+  font-size: 0.9rem;
   font-weight: 600;
 }
 
 .install-plan__copy p {
   color: var(--muted);
-  font-size: 0.8rem;
-  line-height: 1.3;
+  font-size: 0.82rem;
+  line-height: 1.35;
 }
 
 .install-plan__list {
   display: grid;
-  gap: 0.45rem;
-  max-height: 12rem;
+  gap: 0.5rem;
+  max-height: 12.5rem;
   overflow: auto;
   padding-right: 0.12rem;
 }
@@ -461,11 +461,11 @@ const canRemove = computed(() => isInstalled.value && !props.busy && Boolean(pro
   justify-content: space-between;
   gap: 1rem;
   align-items: center;
-  padding: 0.55rem 0.68rem;
+  padding: 0.6rem 0.75rem;
   border-radius: 0.75rem;
   background: #161b23;
   border: 1px solid rgba(148, 163, 184, 0.12);
-  font-size: 0.8rem;
+  font-size: 0.82rem;
 }
 
 .icon-button {
