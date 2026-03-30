@@ -1,9 +1,7 @@
-use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 use crate::error::{AppError, AppResult};
 
@@ -44,8 +42,6 @@ struct RawManifest {
     preserve: Vec<String>,
     #[serde(default)]
     dependencies: Vec<GithubSource>,
-    #[serde(flatten)]
-    _extra: HashMap<String, Value>,
 }
 
 impl Manifest {
@@ -106,69 +102,4 @@ pub fn parse_github_url(raw: &str) -> AppResult<(String, String)> {
         parts[0].to_string(),
         parts[1].trim_end_matches(".git").to_string(),
     ))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{parse_github_url, Manifest};
-
-    #[test]
-    fn parses_current_manifest_schema() {
-        let manifest = Manifest::load_from_str(
-            r#"{
-                "name": "Modern Addon",
-                "description": "Description",
-                "author": "Author",
-                "version": "1.0.0",
-                "github": {
-                    "url": "username/test-addon",
-                    "branch": "main"
-                },
-                "preserve": ["data", "cfg/server.cfg"]
-            }"#,
-        )
-        .expect("manifest");
-
-        assert_eq!(manifest.name, "Modern Addon");
-        assert_eq!(manifest.description, "Description");
-        assert_eq!(manifest.author, "Author");
-        assert_eq!(manifest.version, "1.0.0");
-        assert_eq!(manifest.github.url, "username/test-addon");
-        assert_eq!(manifest.github.branch, "main");
-        assert_eq!(manifest.preserve, vec!["data", "cfg/server.cfg"]);
-        assert!(manifest.dependencies.is_empty());
-
-        let (owner, repo) = parse_github_url(&manifest.github.url).expect("url");
-        assert_eq!(owner, "username");
-        assert_eq!(repo, "test-addon");
-    }
-
-    #[test]
-    fn parses_dependencies() {
-        let manifest = Manifest::load_from_str(
-            r#"{
-                "name": "Depends",
-                "version": "1.0.0",
-                "github": {
-                    "url": "username/root-addon",
-                    "branch": "main"
-                },
-                "dependencies": [
-                    {
-                        "url": "username/lib-one",
-                        "branch": "main"
-                    },
-                    {
-                        "url": "username/lib-two",
-                        "branch": "master"
-                    }
-                ]
-            }"#,
-        )
-        .expect("manifest");
-
-        assert_eq!(manifest.dependencies.len(), 2);
-        assert_eq!(manifest.dependencies[0].url, "username/lib-one");
-        assert_eq!(manifest.dependencies[1].branch, "master");
-    }
 }

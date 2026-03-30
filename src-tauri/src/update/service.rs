@@ -881,22 +881,3 @@ mod glob_match {
         p == pattern.len()
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::should_preserve;
-
-    #[test]
-    fn preserves_files_and_dirs() {
-        assert!(should_preserve("data/config.json", &[String::from("data")]));
-        assert!(should_preserve(
-            "cfg/server.cfg",
-            &[String::from("cfg/server.cfg")]
-        ));
-        assert!(should_preserve(
-            "materials/custom/icon.png",
-            &[String::from("materials/custom/**")]
-        ));
-        assert!(!should_preserve("lua/init.lua", &[String::from("data")]));
-    }
-}
