@@ -195,3 +195,8 @@ Production build:
 cd src-tauri
 cargo tauri build
 ```
+
+## 🔐 License
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+
+Copyright (C) 2026 darkfated.
